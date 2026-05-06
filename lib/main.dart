@@ -15,6 +15,7 @@ class MyApp extends StatelessWidget {
       title: 'Clinic App',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        fontFamily: 'Inter',
       ),
       home: const HomeScreen(), 
     );
