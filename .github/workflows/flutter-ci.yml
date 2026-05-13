@@ -1,0 +1,55 @@
+name: Flutter CI/CD
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    name: Build & Test Flutter App
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Kéo code từ branch về máy ảo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Cài đặt Java (Cần thiết để build Android)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Cài đặt môi trường Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.0' # Bạn có thể đổi phiên bản khớp với máy team đang dùng
+          channel: 'stable'
+
+      # 4. Tải các thư viện (dependencies)
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 5. Kiểm tra lỗi cú pháp và format code
+      - name: Analyze code
+        run: flutter analyze
+
+      # 6. Chạy các file test (như widget_test.dart)
+      - name: Run tests
+        run: flutter test
+
+      # 7. Build ứng dụng ra file APK
+      - name: Build APK release
+        run: flutter build apk --release
+
+      # 8. Upload file APK lên GitHub để tải về
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: clinic-app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30 # Giữ file trên GitHub trong 7 ngày
