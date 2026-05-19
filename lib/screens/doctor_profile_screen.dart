@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 
+// import 'payment_screen.dart';
 class DoctorProfilePage extends StatefulWidget {
   const DoctorProfilePage({super.key});
 
   @override
-  State<DoctorProfilePage> createState() =>
-      _DoctorProfilePageState();
+  State<DoctorProfilePage> createState() => _DoctorProfilePageState();
 }
 
-class _DoctorProfilePageState
-    extends State<DoctorProfilePage> {
-
+class _DoctorProfilePageState extends State<DoctorProfilePage> {
   int selectedDay = 17;
   int selectedTimeIndex = 1;
 
@@ -36,31 +34,23 @@ class _DoctorProfilePageState
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      backgroundColor:
-          const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF5F7FA),
 
       body: SafeArea(
         child: Column(
           children: [
-
             /// APPBAR
             _buildAppBar(),
 
             Expanded(
               child: SingleChildScrollView(
-                padding:
-                    const EdgeInsets.symmetric(
-                  horizontal: 20,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
 
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-
                     const SizedBox(height: 18),
 
                     /// PROFILE CARD
@@ -96,25 +86,23 @@ class _DoctorProfilePageState
   }
 
   Widget _buildAppBar() {
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        14,
-        20,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
 
       child: Row(
-        mainAxisAlignment:
-            MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
         children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
 
-          const Icon(
-            Icons.arrow_back_ios_new,
-            size: 20,
-            color: Color(0xFF0057C2),
+            child: const Icon(
+              Icons.arrow_back_ios_new,
+              size: 20,
+              color: Color(0xFF0057C2),
+            ),
           ),
 
           const Text(
@@ -130,37 +118,26 @@ class _DoctorProfilePageState
             ),
           ),
 
-          const Icon(
-            Icons.search,
-            size: 23,
-            color: Color(0xFF0057C2),
-          ),
+          const Icon(Icons.search, size: 23, color: Color(0xFF0057C2)),
         ],
       ),
     );
   }
 
   Widget _buildProfileCard() {
-
     return Container(
       width: double.infinity,
 
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 24,
-        vertical: 26,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
 
       decoration: BoxDecoration(
         color: Colors.white,
 
-        borderRadius:
-            BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(28),
 
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.04),
 
             blurRadius: 18,
 
@@ -171,16 +148,13 @@ class _DoctorProfilePageState
 
       child: Column(
         children: [
-
           /// AVATAR
           Stack(
             clipBehavior: Clip.none,
 
             children: [
-
               ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(18),
 
                 child: Image.asset(
                   "assets/images/ava1.jpg",
@@ -201,18 +175,11 @@ class _DoctorProfilePageState
                   height: 32,
 
                   decoration: BoxDecoration(
-                    color:
-                        const Color(0xFF0057C2),
+                    color: const Color(0xFF0057C2),
 
-                    borderRadius:
-                        BorderRadius.circular(
-                      16,
-                    ),
+                    borderRadius: BorderRadius.circular(16),
 
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 3,
-                    ),
+                    border: Border.all(color: Colors.white, width: 3),
                   ),
 
                   child: const Icon(
@@ -247,11 +214,9 @@ class _DoctorProfilePageState
 
           /// SPECIALTY
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
 
             children: [
-
               const Icon(
                 Icons.medical_services_outlined,
                 size: 16,
@@ -266,8 +231,7 @@ class _DoctorProfilePageState
                 style: TextStyle(
                   fontSize: 15,
 
-                  fontWeight:
-                      FontWeight.w600,
+                  fontWeight: FontWeight.w600,
 
                   color: Color(0xFF0057C2),
                 ),
@@ -279,36 +243,24 @@ class _DoctorProfilePageState
 
           /// RATING + EXPERIENCE
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
 
             children: [
-
               Container(
-                padding:
-                    const EdgeInsets.symmetric(
+                padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 7,
                 ),
 
                 decoration: BoxDecoration(
-                  color:
-                      const Color(0xFFDDEEFF),
+                  color: const Color(0xFFDDEEFF),
 
-                  borderRadius:
-                      BorderRadius.circular(
-                    18,
-                  ),
+                  borderRadius: BorderRadius.circular(18),
                 ),
 
                 child: const Row(
                   children: [
-
-                    Icon(
-                      Icons.star,
-                      size: 15,
-                      color: Color(0xFF0057C2),
-                    ),
+                    Icon(Icons.star, size: 15, color: Color(0xFF0057C2)),
 
                     SizedBox(width: 4),
 
@@ -318,11 +270,9 @@ class _DoctorProfilePageState
                       style: TextStyle(
                         fontSize: 13,
 
-                        fontWeight:
-                            FontWeight.w600,
+                        fontWeight: FontWeight.w600,
 
-                        color:
-                            Color(0xFF4F5B6D),
+                        color: Color(0xFF4F5B6D),
                       ),
                     ),
                   ],
@@ -351,13 +301,10 @@ class _DoctorProfilePageState
   }
 
   Widget _buildInfoSection() {
-
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
 
       children: [
-
         const Text(
           "Thông tin",
 
@@ -380,15 +327,11 @@ class _DoctorProfilePageState
           decoration: BoxDecoration(
             color: Colors.white,
 
-            borderRadius:
-                BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(24),
 
             boxShadow: [
               BoxShadow(
-                color:
-                    Colors.black.withOpacity(
-                  0.03,
-                ),
+                color: Colors.black.withOpacity(0.03),
 
                 blurRadius: 12,
 
@@ -413,13 +356,10 @@ class _DoctorProfilePageState
   }
 
   Widget _buildCalendarSection() {
-
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
 
       children: [
-
         const Text(
           "Chọn ngày",
 
@@ -440,15 +380,11 @@ class _DoctorProfilePageState
           decoration: BoxDecoration(
             color: Colors.white,
 
-            borderRadius:
-                BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(24),
 
             boxShadow: [
               BoxShadow(
-                color:
-                    Colors.black.withOpacity(
-                  0.03,
-                ),
+                color: Colors.black.withOpacity(0.03),
 
                 blurRadius: 12,
 
@@ -459,45 +395,30 @@ class _DoctorProfilePageState
 
           child: Column(
             children: [
-
               /// HEADER
               Row(
-                mainAxisAlignment:
-                    MainAxisAlignment
-                        .spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                 children: [
-
                   const Text(
                     "Tháng 12/2026",
 
                     style: TextStyle(
                       fontSize: 18,
 
-                      fontWeight:
-                          FontWeight.w700,
+                      fontWeight: FontWeight.w700,
 
-                      color:
-                          Color(0xFF1A1F36),
+                      color: Color(0xFF1A1F36),
                     ),
                   ),
 
                   Row(
                     children: const [
-
-                      Icon(
-                        Icons.chevron_left,
-                        color:
-                            Color(0xFFB0B8C5),
-                      ),
+                      Icon(Icons.chevron_left, color: Color(0xFFB0B8C5)),
 
                       SizedBox(width: 4),
 
-                      Icon(
-                        Icons.chevron_right,
-                        color:
-                            Color(0xFFB0B8C5),
-                      ),
+                      Icon(Icons.chevron_right, color: Color(0xFFB0B8C5)),
                     ],
                   ),
                 ],
@@ -507,9 +428,7 @@ class _DoctorProfilePageState
 
               /// WEEK
               Row(
-                children:
-                    weekDays.map((day) {
-
+                children: weekDays.map((day) {
                   return Expanded(
                     child: Text(
                       day,
@@ -520,11 +439,9 @@ class _DoctorProfilePageState
                         fontSize: 11,
                         height: 1.3,
 
-                        fontWeight:
-                            FontWeight.w600,
+                        fontWeight: FontWeight.w600,
 
-                        color:
-                            Color(0xFFB0B8C5),
+                        color: Color(0xFFB0B8C5),
                       ),
                     ),
                   );
@@ -538,65 +455,50 @@ class _DoctorProfilePageState
                 spacing: 10,
                 runSpacing: 12,
 
-                children: List.generate(
-                  17,
-                  (index) {
+                children: List.generate(17, (index) {
+                  int day = index + 8;
 
-                    int day = index + 8;
+                  bool isSelected = day == selectedDay;
 
-                    bool isSelected =
-                        day == selectedDay;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedDay = day;
+                      });
+                    },
 
-                    return GestureDetector(
-                      onTap: () {
+                    child: Container(
+                      width: 36,
+                      height: 40,
 
-                        setState(() {
-                          selectedDay = day;
-                        });
-                      },
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF0057C2)
+                            : Colors.transparent,
 
-                      child: Container(
-                        width: 36,
-                        height: 40,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
 
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? const Color(
-                                  0xFF0057C2,
-                                )
-                              : Colors.transparent,
+                      child: Center(
+                        child: Text(
+                          "$day",
 
-                          borderRadius:
-                              BorderRadius
-                                  .circular(12),
-                        ),
+                          style: TextStyle(
+                            fontSize: 15,
 
-                        child: Center(
-                          child: Text(
-                            "$day",
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
 
-                            style: TextStyle(
-                              fontSize: 15,
-
-                              fontWeight:
-                                  isSelected
-                                      ? FontWeight
-                                          .w700
-                                      : FontWeight
-                                          .w500,
-
-                              color: isSelected
-                                  ? Colors.white
-                                  : const Color(
-                                      0xFF1A1F36,
-                                    ),
-                            ),
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF1A1F36),
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                }),
               ),
             ],
           ),
@@ -606,13 +508,10 @@ class _DoctorProfilePageState
   }
 
   Widget _buildTimeSection() {
-
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
 
       children: [
-
         const Text(
           "Chọn giờ",
 
@@ -630,13 +529,11 @@ class _DoctorProfilePageState
         GridView.builder(
           shrinkWrap: true,
 
-          physics:
-              const NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
 
           itemCount: timeSlots.length,
 
-          gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
 
             childAspectRatio: 2.7,
@@ -646,58 +543,38 @@ class _DoctorProfilePageState
           ),
 
           itemBuilder: (context, index) {
+            bool disabled = timeSlots[index]['disabled'];
 
-            bool disabled =
-                timeSlots[index]['disabled'];
-
-            bool isSelected =
-                selectedTimeIndex == index;
+            bool isSelected = selectedTimeIndex == index;
 
             return GestureDetector(
               onTap: disabled
                   ? null
                   : () {
-
                       setState(() {
-                        selectedTimeIndex =
-                            index;
+                        selectedTimeIndex = index;
                       });
                     },
 
               child: Container(
                 decoration: BoxDecoration(
                   color: disabled
-                      ? const Color(
-                          0xFFF0F2F5,
-                        )
+                      ? const Color(0xFFF0F2F5)
                       : isSelected
-                          ? const Color(
-                              0xFF0057C2,
-                            )
-                          : Colors.white,
+                      ? const Color(0xFF0057C2)
+                      : Colors.white,
 
-                  borderRadius:
-                      BorderRadius.circular(
-                    18,
-                  ),
+                  borderRadius: BorderRadius.circular(18),
 
-                  boxShadow: disabled ||
-                          isSelected
+                  boxShadow: disabled || isSelected
                       ? []
                       : [
                           BoxShadow(
-                            color: Colors.black
-                                .withOpacity(
-                              0.04,
-                            ),
+                            color: Colors.black.withOpacity(0.04),
 
                             blurRadius: 8,
 
-                            offset:
-                                const Offset(
-                              0,
-                              2,
-                            ),
+                            offset: const Offset(0, 2),
                           ),
                         ],
                 ),
@@ -709,18 +586,13 @@ class _DoctorProfilePageState
                     style: TextStyle(
                       fontSize: 16,
 
-                      fontWeight:
-                          FontWeight.w600,
+                      fontWeight: FontWeight.w600,
 
                       color: disabled
-                          ? const Color(
-                              0xFFCDD5DF,
-                            )
+                          ? const Color(0xFFCDD5DF)
                           : isSelected
-                              ? Colors.white
-                              : const Color(
-                                  0xFF1A1F36,
-                                ),
+                          ? Colors.white
+                          : const Color(0xFF1A1F36),
                     ),
                   ),
                 ),
@@ -733,53 +605,45 @@ class _DoctorProfilePageState
   }
 
   Widget _buildConfirmButton() {
-
     return Container(
-      padding:
-          const EdgeInsets.fromLTRB(
-        20,
-        10,
-        20,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
 
       child: SizedBox(
         width: double.infinity,
         height: 62,
 
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+              context,
+
+              MaterialPageRoute(builder: (context) => const PaymentScreen()),
+            );
+          },
 
           style: ElevatedButton.styleFrom(
-            backgroundColor:
-                const Color(0xFF0057C2),
+            backgroundColor: const Color(0xFF0057C2),
 
             elevation: 8,
 
-            shadowColor:
-                const Color(0x330057C2),
+            shadowColor: const Color(0x330057C2),
 
-            shape:
-                RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
           ),
 
           child: const Row(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
 
             children: [
-
               Text(
                 "Xác nhận cuộc hẹn",
 
                 style: TextStyle(
                   fontSize: 18,
 
-                  fontWeight:
-                      FontWeight.w700,
+                  fontWeight: FontWeight.w700,
 
                   color: Colors.white,
                 ),

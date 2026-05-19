@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+// import 'cancel_appointment_screen.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -96,13 +97,42 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
         alignment: Alignment.center,
 
         children: [
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
 
-            child: Icon(
-              Icons.arrow_back_ios_new,
-              size: 22,
-              color: Color(0xFF004B9A),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+              },
+
+              child: Container(
+                width: 42,
+                height: 42,
+
+                decoration: BoxDecoration(
+                  color: Colors.white,
+
+                  borderRadius: BorderRadius.circular(14),
+
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+
+                      blurRadius: 10,
+
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_back_ios_new,
+                    size: 18,
+                    color: Color(0xFF004B9A),
+                  ),
+                ),
+              ),
             ),
           ),
 
@@ -489,7 +519,15 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
       height: 64,
 
       child: OutlinedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+
+            MaterialPageRoute(
+              builder: (context) => const CancelAppointmentScreen(),
+            ),
+          );
+        },
 
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Color(0xFFE6B7B7), width: 1.5),

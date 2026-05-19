@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'search_screen.dart';
+import '../data/doctors_data.dart';
+import 'booking_screen.dart';
+//import 'profile_screen.dart';
+import 'doctor_profile_screen.dart';
+// import 'schedule_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,6 +16,7 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime selectedDate = DateTime.now();
 
   TimeOfDay selectedTime = TimeOfDay.now();
+
   Future<void> pickDate() async {
     DateTime? picked = await showDatePicker(
       context: context,
@@ -42,14 +47,18 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final doctor = doctors[1];
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FB),
 
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16),
+
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+
             children: [
               const SizedBox(height: 12),
 
@@ -57,28 +66,43 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
+
                 children: [
                   /// LEFT
                   Row(
                     children: [
-                      /// AVATAR
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                            image: AssetImage("assets/images/ava1.jpg"),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
+                      // /// AVATAR
+                      // GestureDetector(
+                      //   onTap: () {
+                      //     Navigator.push(
+                      //       context,
 
+                      //       MaterialPageRoute(
+                      //         builder: (context) => const ProfileScreen(),
+                      //       ),
+                      //     );
+                      //   },
+
+                      //   child: Container(
+                      //     width: 42,
+                      //     height: 42,
+
+                      //     decoration: BoxDecoration(
+                      //       shape: BoxShape.circle,
+
+                      //       image: DecorationImage(
+                      //         image: AssetImage(doctor.image),
+                      //         fit: BoxFit.cover,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
                       const SizedBox(width: 12),
 
                       /// LOGO TEXT
                       const Text(
                         "SereneHealth",
+
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -94,8 +118,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
+
                         MaterialPageRoute(
-                          builder: (context) => const SearchScreen(),
+                          builder: (context) => const BookingPage(),
                         ),
                       );
                     },
@@ -108,11 +133,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 20),
 
               /// WELCOME
               const Text(
                 "Chào mừng,",
+
                 style: TextStyle(
                   fontSize: 42,
                   fontWeight: FontWeight.w800,
@@ -126,6 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const Text(
                 "Alexander",
+
                 style: TextStyle(
                   fontSize: 42,
                   fontWeight: FontWeight.w800,
@@ -134,6 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Color(0xFF0057C2),
                 ),
               ),
+
               const SizedBox(height: 14),
 
               SizedBox(
@@ -151,6 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 22),
 
               /// TITLE
@@ -173,14 +203,26 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 4, bottom: 1),
 
-                    child: Text(
-                      "Xem tất cả",
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
 
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0057C2),
-                        letterSpacing: -0.2,
+                          MaterialPageRoute(
+                            builder: (context) => const BookingPage(),
+                          ),
+                        );
+                      },
+
+                      child: const Text(
+                        "Xem tất cả",
+
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0057C2),
+                          letterSpacing: -0.2,
+                        ),
                       ),
                     ),
                   ),
@@ -199,6 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
+
                     colors: [
                       Color.fromARGB(255, 0, 68, 152),
                       Color.fromARGB(255, 17, 89, 185),
@@ -207,9 +250,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0x330057C2),
+                      color: Color(0x330057C2),
                       blurRadius: 25,
-                      offset: const Offset(0, 12),
+                      offset: Offset(0, 12),
                     ),
                   ],
                 ),
@@ -227,8 +270,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
 
-                            image: const DecorationImage(
-                              image: AssetImage("assets/images/ava1.jpg"),
+                            image: DecorationImage(
+                              image: AssetImage(doctor.image),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -242,10 +285,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
 
                             children: [
-                              const Text(
-                                "TS.BS.Đinh Vinh\nQuang",
+                              Text(
+                                doctor.name,
 
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
@@ -256,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               const SizedBox(height: 4),
 
                               Text(
-                                "Khoa nội thần kinh",
+                                doctor.specialty,
 
                                 style: TextStyle(
                                   fontSize: 13,
@@ -402,12 +445,19 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 20),
 
                     /// BUTTON
                     GestureDetector(
                       onTap: () {
-                        print("Confirm appointment");
+                        Navigator.push(
+                          context,
+
+                          MaterialPageRoute(
+                            builder: (context) => const DoctorProfilePage(),
+                          ),
+                        );
                       },
 
                       child: Container(
@@ -416,7 +466,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(18),
-
                           color: Colors.white,
                         ),
 
@@ -454,10 +503,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
                 childAspectRatio: 1.2,
+
                 children: const [
                   _CategoryItem("Tim mạch", "12 Chuyên gia"),
+
                   _CategoryItem("Nhi khoa", "8 Chuyên gia"),
+
                   _CategoryItem("Da liễu", "15 Chuyên gia"),
+
                   _CategoryItem("Tổng quát", "24 Chuyên gia"),
                 ],
               ),
@@ -467,31 +520,41 @@ class _HomeScreenState extends State<HomeScreen> {
               /// BLOG
               Container(
                 padding: const EdgeInsets.all(14),
+
                 decoration: BoxDecoration(
                   color: const Color(0xFFEAF2FF),
                   borderRadius: BorderRadius.circular(16),
                 ),
+
                 child: Row(
                   children: [
                     const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+
                         children: [
                           Text(
                             "MẸO HÀNG NGÀY",
+
                             style: TextStyle(
                               fontSize: 11,
                               color: Color(0xFF2F6CD3),
                             ),
                           ),
+
                           SizedBox(height: 6),
+
                           Text(
                             "Giữ cơ thể đủ nước trong suốt mùa thu",
+
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
+
                           SizedBox(height: 6),
+
                           Text(
                             "Uống nước giúp duy trì mức năng lượng trong suốt cả ngày.",
+
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xFF8A94A6),
@@ -500,9 +563,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
+
                     Container(
                       width: 60,
                       height: 60,
+
                       decoration: BoxDecoration(
                         color: Colors.black,
                         borderRadius: BorderRadius.circular(14),
@@ -519,22 +584,38 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
       /// FLOAT BUTTON
-      floatingActionButton: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: const BoxDecoration(
-          color: Color(0xFF2F6CD3),
-          shape: BoxShape.circle,
+      /// FLOAT BUTTON
+      floatingActionButton: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+
+            MaterialPageRoute(builder: (context) => const BookingPage()),
+          );
+        },
+
+        child: Container(
+          padding: const EdgeInsets.all(14),
+
+          decoration: const BoxDecoration(
+            color: Color(0xFF2F6CD3),
+            shape: BoxShape.circle,
+          ),
+
+          child: const Icon(Icons.add, color: Colors.white),
         ),
-        child: const Icon(Icons.add, color: Colors.white),
       ),
 
       /// BOTTOM NAV
       bottomNavigationBar: Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
+
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -546,22 +627,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
+
           children: [
             /// ACTIVE TAB
             Container(
               width: 72,
               height: 58,
+
               decoration: BoxDecoration(
                 color: const Color(0xFF1565C0),
                 borderRadius: BorderRadius.circular(18),
               ),
+
               child: const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+
                 children: [
                   Icon(Icons.home_rounded, color: Colors.white, size: 22),
+
                   SizedBox(height: 2),
+
                   Text(
                     "HOME",
+
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -573,45 +661,62 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            _navItem(Icons.search, "SEARCH"),
-            _navItem(Icons.calendar_today_outlined, "SCHEDULE"),
-            _navItem(Icons.person_outline, "PROFILE"),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+
+                  MaterialPageRoute(builder: (context) => const BookingPage()),
+                );
+              },
+
+              child: _navItem(Icons.search, "SEARCH"),
+            ),
+
+            // GestureDetector(
+            //   onTap: () {
+            //     Navigator.push(
+            //       context,
+
+            //       MaterialPageRoute(
+            //         builder: (context) => const ScheduleListScreen(),
+            //       ),
+            //     );
+            //   },
+
+            //   child: _navItem(Icons.calendar_today_outlined, "SCHEDULE"),
+            // ),
+
+            // GestureDetector(
+            //   onTap: () {
+            //     Navigator.push(
+            //       context,
+
+            //       MaterialPageRoute(
+            //         builder: (context) => const ProfileScreen(),
+            //       ),
+            //     );
+            //   },
+
+            //   child: _navItem(Icons.person_outline, "PROFILE"),
+            // ),
           ],
         ),
       ),
     );
   }
-
-  static Widget _infoBox(IconData icon, String title, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.white, size: 16),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
-          ),
-          const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: Colors.white)),
-        ],
-      ),
-    );
-  }
-
   static Widget _navItem(IconData icon, String title) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+
       children: [
         Icon(icon, color: const Color(0xFF9AA4B2), size: 20),
+
         const SizedBox(height: 4),
+
         Text(
           title,
+
           style: const TextStyle(
             color: Color(0xFF9AA4B2),
             fontSize: 9,
@@ -634,26 +739,36 @@ class _CategoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
+
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
       ),
+
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+
         children: [
           Container(
             padding: const EdgeInsets.all(10),
+
             decoration: BoxDecoration(
               color: const Color(0xFFEAF2FF),
               borderRadius: BorderRadius.circular(12),
             ),
+
             child: const Icon(Icons.favorite, color: Color(0xFF2F6CD3)),
           ),
+
           const SizedBox(height: 10),
+
           Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+
           const SizedBox(height: 4),
+
           Text(
             sub,
+
             style: const TextStyle(fontSize: 12, color: Color(0xFF8A94A6)),
           ),
         ],

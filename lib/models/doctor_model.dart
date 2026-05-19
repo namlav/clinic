@@ -5,6 +5,7 @@ class DoctorModel {
   final String image;
   final double rating;
   final String experience;
+  final String? subtitle;
 
   DoctorModel({
     required this.name,
@@ -12,5 +13,6 @@ class DoctorModel {
     required this.image,
     required this.rating,
     required this.experience,
+    this.subtitle,
   });
 }
