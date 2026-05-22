@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'cancel_appointment_screen.dart';
 
 class ScheduleListScreen extends StatefulWidget {
   const ScheduleListScreen({super.key});
@@ -224,7 +225,14 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CancelAppointmentScreen(),
+                        ),
+                      );
+                    },
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),

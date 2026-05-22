@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'schedule_list_screen.dart';
 
 class CancelSuccessScreen extends StatelessWidget {
   const CancelSuccessScreen({super.key});
@@ -112,7 +113,14 @@ class CancelSuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ScheduleListScreen(),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   shape: RoundedRectangleBorder(
@@ -120,7 +128,7 @@ class CancelSuccessScreen extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Về trang chủ',
+                  'Về trang lịch trình',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
