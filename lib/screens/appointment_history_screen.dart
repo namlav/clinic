@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/medical_appointment_model.dart';
 
 class AppointmentHistoryScreen extends StatefulWidget {
-  const AppointmentHistoryScreen({Key? key}) : super(key: key);
+  const AppointmentHistoryScreen({super.key});
 
   @override
   State<AppointmentHistoryScreen> createState() =>
@@ -81,9 +81,14 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
   void _filterAppointments() {
     setState(() {
       filteredAppointments = appointments.where((apt) {
-        bool matchesSearch = searchController.text.isEmpty ||
-            apt.doctorName.toLowerCase().contains(searchController.text.toLowerCase()) ||
-            apt.hospital.toLowerCase().contains(searchController.text.toLowerCase());
+        bool matchesSearch =
+            searchController.text.isEmpty ||
+            apt.doctorName.toLowerCase().contains(
+              searchController.text.toLowerCase(),
+            ) ||
+            apt.hospital.toLowerCase().contains(
+              searchController.text.toLowerCase(),
+            );
 
         bool matchesFilter = true;
         if (selectedFilter == 'Hoàn thành') {

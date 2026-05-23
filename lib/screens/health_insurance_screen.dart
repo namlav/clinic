@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/health_insurance_model.dart';
 
 class HealthInsuranceScreen extends StatefulWidget {
-  const HealthInsuranceScreen({Key? key}) : super(key: key);
+  const HealthInsuranceScreen({super.key});
 
   @override
   State<HealthInsuranceScreen> createState() => _HealthInsuranceScreenState();

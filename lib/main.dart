@@ -21,153 +21,147 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const HomeTestScreen(),
+      home: const MainApp(),
     );
   }
 }
 
-class HomeTestScreen extends StatelessWidget {
-  const HomeTestScreen({super.key});
+class MainApp extends StatefulWidget {
+  const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  int _selectedIndex = 0;
+
+  final List<Widget> _screens = [
+    const ProfileScreen(),
+    const SearchScreen(),
+    const ScheduleScreen(),
+    const ProfileScreen(),
+  ];
+
+  void _onNavItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.blue[600],
-        elevation: 0,
-        title: const Text(
-          'SereneHealth - Test Screens',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withValues(alpha: 0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Text(
-              'Danh Sách Các Screens',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildScreenButton(
-              context,
-              'Profile Bệnh Nhân',
-              '👤',
-              const ProfileScreen(),
-            ),
-            _buildScreenButton(
-              context,
-              'Hồ Sơ Y Tế',
-              '📋',
-              const MedicalRecordsScreen(),
-            ),
-            _buildScreenButton(
-              context,
-              'Lịch Sử Tiêm Chủng',
-              '💉',
-              const VaccinationHistoryScreen(),
-            ),
-            _buildScreenButton(
-              context,
-              'Bảo Hiểm Y Tế',
-              '🏥',
-              const HealthInsuranceScreen(),
-            ),
-            _buildScreenButton(
-              context,
-              'Cài Đặt Thông Báo',
-              '🔔',
-              const NotificationSettingsScreen(),
-            ),
-            _buildScreenButton(
-              context,
-              'Lịch Sử Khám Bệnh',
-              '📅',
-              const AppointmentHistoryScreen(),
-            ),
+            _buildNavItem(0, Icons.home, 'HOME'),
+            _buildNavItem(1, Icons.search, 'SEARCH'),
+            _buildNavItem(2, Icons.calendar_today, 'SCHEDULE'),
+            _buildNavItem(3, Icons.person, 'PROFILE'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildScreenButton(
-    BuildContext context,
-    String title,
-    String emoji,
-    Widget screen,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => screen),
-            );
-          },
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _selectedIndex == index;
+    return GestureDetector(
+      onTap: () => _onNavItemTapped(index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: LinearGradient(
-                colors: [Colors.blue[50]!, Colors.blue[100]!],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              border: Border.all(color: Colors.blue[200]!),
+          color: isSelected ? Colors.blue[600] : Colors.transparent,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.grey[400],
+              size: 24,
             ),
-            child: Row(
-              children: [
-                Text(emoji, style: const TextStyle(fontSize: 28)),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Nhấn để xem chi tiết',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
+            if (isSelected) ...[
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
                 ),
-                Icon(Icons.arrow_forward_ios, color: Colors.blue[600], size: 16),
-              ],
-            ),
-          ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SearchScreen extends StatelessWidget {
+  const SearchScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Tìm Kiếm',
+          style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: Center(
+        child: Text(
+          'Tính năng tìm kiếm sẽ được phát triển sớm',
+          style: TextStyle(color: Colors.grey[500]),
+        ),
+      ),
+    );
+  }
+}
+
+class ScheduleScreen extends StatelessWidget {
+  const ScheduleScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          'Lịch',
+          style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: Center(
+        child: Text(
+          'Tính năng lịch sẽ được phát triển sớm',
+          style: TextStyle(color: Colors.grey[500]),
         ),
       ),
     );

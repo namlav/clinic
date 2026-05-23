@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/vaccination_model.dart';
 
 class VaccinationHistoryScreen extends StatefulWidget {
-  const VaccinationHistoryScreen({Key? key}) : super(key: key);
+  const VaccinationHistoryScreen({super.key});
 
   @override
   State<VaccinationHistoryScreen> createState() =>
