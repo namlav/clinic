@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
 import 'medical_records_screen.dart';
 import 'vaccination_history_screen.dart';
@@ -25,7 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _initializeMockData() {
     patient = Patient(
       id: '1',
-      fullName: 'Nguyễn Khôi Khoản',
+      fullName: 'Nguyễn Khỏe Khoắn',
       email: 'nguyen.khoai@example.com',
       phone: '+84 123 456 789',
       avatarUrl: 'assets/avatar.jpg',
@@ -41,85 +41,119 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: Icon(Icons.menu, color: Colors.grey[700]),
-        title: Text(
+        centerTitle: false,
+        title: const Text(
           'SereneHealth',
           style: TextStyle(
-            color: Colors.grey[700],
-            fontWeight: FontWeight.bold,
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.notifications, color: Colors.grey[700]),
+            icon: const Icon(
+              Icons.notifications_outlined,
+              color: Color(0xFF4B5563),
+            ),
             onPressed: () {},
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: Colors.blue[100],
-              child: Icon(Icons.person, size: 80, color: Colors.blue),
-            ),
-            const SizedBox(height: 15),
-            Text(
-              patient.fullName,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              patient.memberType,
-              style: TextStyle(fontSize: 12, color: Colors.blue[600]),
-            ),
-            Text(
-              'Thành viên từ ${patient.memberSince.day}/${patient.memberSince.month}/${patient.memberSince.year}',
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
-            ),
+            _buildProfileCard(),
+            const SizedBox(height: 18),
+            _buildHealthOverviewCard(),
+            const SizedBox(height: 18),
+            _buildSectionTitle('Quản lý hồ sơ'),
+            const SizedBox(height: 12),
+            _buildFeatureGrid(),
             const SizedBox(height: 20),
-            _buildHealthStats(),
-            const SizedBox(height: 20),
-            _buildMenuSection(),
-            const SizedBox(height: 20),
-            _buildSettingsSection(),
+            _buildSectionTitle('Cài đặt'),
+            const SizedBox(height: 12),
+            _buildSettingsTile('🔔 Thông Báo', 'notification_settings'),
+            const SizedBox(height: 10),
+            _buildSettingsTile('❓ Hỗ Trợ', null),
+            const SizedBox(height: 10),
+            _buildSettingsTile('🚪 Đăng xuất', null),
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHealthStats() {
+  Widget _buildProfileCard() {
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(25),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          CircleAvatar(
+            radius: 36,
+            backgroundColor: const Color(0xFFEFF6FF),
+            backgroundImage: AssetImage(patient.avatarUrl),
+            child: patient.avatarUrl.isEmpty
+                ? const Icon(Icons.person, color: Color(0xFF2563EB), size: 36)
+                : null,
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Tình Trạng Sức Khỏe',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: Colors.grey[700],
+            patient.fullName,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF111827),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
+          Text(
+            patient.memberType,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF2563EB),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Thành viên từ ${patient.memberSince.day}/${patient.memberSince.month}/${patient.memberSince.year}',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+          ),
+          const SizedBox(height: 18),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildStatItem('❤️', '${patient.heartRate}', 'Nhịp Tim', 'bpm'),
-              _buildStatItem('📊', patient.bloodPressure, 'Huyết Áp', ''),
-              _buildStatItem('⚖️', '${patient.weight} kg', 'Cân Nặng', ''),
+              _buildStatusBadge(
+                'ACTIVE',
+                const Color(0xFFEFF6FF),
+                const Color(0xFF2563EB),
+              ),
+              const SizedBox(width: 10),
+              _buildStatusBadge(
+                'Premium',
+                const Color(0xFFEEF2FF),
+                const Color(0xFF4338CA),
+              ),
             ],
           ),
         ],
@@ -127,82 +161,217 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildStatItem(String icon, String value, String label, String unit) {
-    return Column(
-      children: [
-        Text(icon, style: const TextStyle(fontSize: 24)),
-        const SizedBox(height: 5),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        if (unit.isNotEmpty)
-          Text(unit, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-      ],
-    );
-  }
-
-  Widget _buildMenuSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildMenuItem('Hồ Sơ Y Tế', 'medical_records'),
-        _buildMenuItem('Bảo Hiểm Y Tế', 'health_insurance'),
-        _buildMenuItem('Lịch Sử Tiêm Chủng', 'vaccination_history'),
-        _buildMenuItem('Lịch Sử Khám Bệnh', 'appointment_history'),
-      ],
-    );
-  }
-
-  Widget _buildMenuItem(String title, String route) {
+  Widget _buildStatusBadge(String label, Color background, Color textColor) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
+        color: background,
+        borderRadius: BorderRadius.circular(18),
       ),
-      child: ListTile(
-        onTap: () => _navigateToScreen(route),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
       ),
     );
   }
 
-  Widget _buildSettingsSection() {
+  Widget _buildHealthOverviewCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(20),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tình Trạng Sức Khỏe',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 18),
+          _buildHealthStat('72', 'bpm', 'Nhịp Tim'),
+          const SizedBox(height: 16),
+          _buildHealthStat('120/80', '', 'Huyết Áp'),
+          const SizedBox(height: 16),
+          _buildHealthStat('70', 'kg', 'Cân Nặng'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHealthStat(String value, String unit, String label) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Row(
+          children: [
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF111827),
+              ),
+            ),
+            if (unit.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Text(
+                unit,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF6B7280),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
         Text(
-          'Cài Đặt',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: Colors.grey[700],
-          ),
+          label,
+          style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF111827),
+      ),
+    );
+  }
+
+  Widget _buildFeatureGrid() {
+    return Column(
+      children: [
+        _buildFeatureTile('Hồ Sơ Y Tế', Icons.folder_shared, 'medical_records'),
+        const SizedBox(height: 12),
+        _buildFeatureTile('Bảo Hiểm Y Tế', Icons.shield, 'health_insurance'),
+        const SizedBox(height: 12),
+        _buildFeatureTile(
+          'Lịch Sử Tiêm Chủng',
+          Icons.vaccines,
+          'vaccination_history',
         ),
         const SizedBox(height: 12),
-        _buildSettingItem('Thông Báo', 'notification_settings'),
-        _buildSettingItem('Hỗ Trợ', null),
-        _buildSettingItem('Đăng xuất', null),
+        _buildFeatureTile(
+          'Lịch Sử Khám Bệnh',
+          Icons.calendar_month,
+          'appointment_history',
+        ),
       ],
     );
   }
 
-  Widget _buildSettingItem(String title, String? route) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
+  Widget _buildFeatureTile(String title, IconData icon, String route) {
+    return GestureDetector(
+      onTap: () => _navigateToScreen(route),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withAlpha(15),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: const Color(0xFF2563EB), size: 22),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Color(0xFF9CA3AF),
+            ),
+          ],
+        ),
       ),
-      child: ListTile(
-        onTap: () {
-          if (route != null) _navigateToScreen(route);
-        },
-        title: Text(title),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+    );
+  }
+
+  Widget _buildSettingsTile(String title, String? route) {
+    return GestureDetector(
+      onTap: () {
+        if (route != null) {
+          _navigateToScreen(route);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withAlpha(15),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Color(0xFF9CA3AF),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -228,9 +397,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return;
     }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => screen),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
 }

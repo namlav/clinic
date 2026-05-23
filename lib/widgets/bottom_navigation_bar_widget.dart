@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 class BottomNavigationBarApp extends StatefulWidget {
   final int initialIndex;
 
-  const BottomNavigationBarApp({Key? key, this.initialIndex = 0})
-    : super(key: key);
+  const BottomNavigationBarApp({super.key, this.initialIndex = 0});
 
   @override
   State<BottomNavigationBarApp> createState() => _BottomNavigationBarAppState();

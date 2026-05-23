@@ -1,10 +1,5 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'screens/profile_screen.dart';
-import 'screens/medical_records_screen.dart';
-import 'screens/vaccination_history_screen.dart';
-import 'screens/health_insurance_screen.dart';
-import 'screens/notification_settings_screen.dart';
-import 'screens/appointment_history_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -16,10 +11,18 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'SereneHealth',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF4F7FB),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF2563EB),
+          brightness: Brightness.light,
+        ),
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(color: Color(0xFF111827)),
+        ),
       ),
       home: const MainApp(),
     );
@@ -36,11 +39,11 @@ class MainApp extends StatefulWidget {
 class _MainAppState extends State<MainApp> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const ProfileScreen(),
-    const SearchScreen(),
-    const ScheduleScreen(),
-    const ProfileScreen(),
+  final List<Widget> _screens = const [
+    ProfileScreen(),
+    SearchScreen(),
+    ScheduleScreen(),
+    ProfileScreen(),
   ];
 
   void _onNavItemTapped(int index) {
@@ -54,28 +57,28 @@ class _MainAppState extends State<MainApp> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: Colors.grey.withAlpha(25),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
             ),
           ],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(0, Icons.home, 'HOME'),
-            _buildNavItem(1, Icons.search, 'SEARCH'),
-            _buildNavItem(2, Icons.calendar_today, 'SCHEDULE'),
-            _buildNavItem(3, Icons.person, 'PROFILE'),
+            _buildNavItem(0, Icons.home_rounded, 'Home'),
+            _buildNavItem(1, Icons.search_rounded, 'Search'),
+            _buildNavItem(2, Icons.calendar_month_rounded, 'Schedule'),
+            _buildNavItem(3, Icons.person_rounded, 'Profile'),
           ],
         ),
       ),
@@ -87,30 +90,28 @@ class _MainAppState extends State<MainApp> {
     return GestureDetector(
       onTap: () => _onNavItemTapped(index),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected ? Colors.blue[600] : Colors.transparent,
+          color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.white : Colors.grey[400],
               size: 24,
+              color: isSelected ? Colors.white : const Color(0xFF9CA3AF),
             ),
-            if (isSelected) ...[
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : const Color(0xFF9CA3AF),
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -119,24 +120,37 @@ class _MainAppState extends State<MainApp> {
 }
 
 class SearchScreen extends StatelessWidget {
-  const SearchScreen({Key? key}) : super(key: key);
+  const SearchScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
+        centerTitle: false,
+        title: const Text(
           'Tìm Kiếm',
-          style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
         ),
       ),
       body: Center(
-        child: Text(
-          'Tính năng tìm kiếm sẽ được phát triển sớm',
-          style: TextStyle(color: Colors.grey[500]),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.search_rounded, size: 60, color: Color(0xFF9CA3AF)),
+            SizedBox(height: 18),
+            Text(
+              'Chức năng tìm kiếm đang được hoàn thiện',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF6B7280), fontSize: 15),
+            ),
+          ],
         ),
       ),
     );
@@ -144,24 +158,41 @@ class SearchScreen extends StatelessWidget {
 }
 
 class ScheduleScreen extends StatelessWidget {
-  const ScheduleScreen({Key? key}) : super(key: key);
+  const ScheduleScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
+        centerTitle: false,
+        title: const Text(
           'Lịch',
-          style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
         ),
       ),
       body: Center(
-        child: Text(
-          'Tính năng lịch sẽ được phát triển sớm',
-          style: TextStyle(color: Colors.grey[500]),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(
+              Icons.calendar_month_rounded,
+              size: 60,
+              color: Color(0xFF9CA3AF),
+            ),
+            SizedBox(height: 18),
+            Text(
+              'Chức năng lịch đang được hoàn thiện',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFF6B7280), fontSize: 15),
+            ),
+          ],
         ),
       ),
     );

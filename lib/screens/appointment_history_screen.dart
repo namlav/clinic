@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/medical_appointment_model.dart';
 
 class AppointmentHistoryScreen extends StatefulWidget {
@@ -33,7 +33,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       MedicalAppointment(
         id: '1',
         doctorName: 'PGS.TS.BS. Nguyễn Trí Thoại',
-        specialization: '🩺 Khoa tim mạch',
+        specialization: 'Khoa tim mạch',
         hospital: 'Bệnh viện Anh',
         avatarUrl: 'assets/doctor1.jpg',
         appointmentDate: DateTime(2025, 4, 24),
@@ -44,7 +44,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       MedicalAppointment(
         id: '2',
         doctorName: 'TS.BS. Đặng Vinh Quang',
-        specialization: '🏥 Khoa nội tiết',
+        specialization: 'Khoa nội tiết',
         hospital: 'Bệnh viện Nhân Sâm',
         avatarUrl: 'assets/doctor2.jpg',
         appointmentDate: DateTime(2025, 5, 12),
@@ -55,7 +55,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       MedicalAppointment(
         id: '3',
         doctorName: 'PGS.TS.BS. Lê Thái Văn Thạnh',
-        specialization: '👨‍⚕️ Khoa nội khoa',
+        specialization: 'Khoa nội khoa',
         hospital: 'Bệnh viện Sài Gòn',
         avatarUrl: 'assets/doctor3.jpg',
         appointmentDate: DateTime(2025, 6, 15),
@@ -66,7 +66,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       MedicalAppointment(
         id: '4',
         doctorName: 'BS. Phòng Khám Ngành Đảng',
-        specialization: '👩‍⚕️ Khoa nha khoa',
+        specialization: 'Khoa nha khoa',
         hospital: 'Bệnh viện Miễn Quy',
         avatarUrl: 'assets/doctor4.jpg',
         appointmentDate: DateTime(2025, 6, 25),
@@ -78,19 +78,20 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
     filteredAppointments = appointments;
   }
 
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
   void _filterAppointments() {
     setState(() {
       filteredAppointments = appointments.where((apt) {
-        bool matchesSearch =
-            searchController.text.isEmpty ||
-            apt.doctorName.toLowerCase().contains(
-              searchController.text.toLowerCase(),
-            ) ||
-            apt.hospital.toLowerCase().contains(
-              searchController.text.toLowerCase(),
-            );
+        final query = searchController.text.toLowerCase();
+        final matchesSearch =
+            query.isEmpty ||
+            apt.doctorName.toLowerCase().contains(query) ||
+            apt.hospital.toLowerCase().contains(query);
 
-        bool matchesFilter = true;
+        var matchesFilter = true;
         if (selectedFilter == 'Hoàn thành') {
           matchesFilter = !apt.isUpcoming;
         } else if (selectedFilter == 'Sắp tới') {
@@ -112,93 +113,318 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.grey[700]),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
+        iconTheme: const IconThemeData(color: Color(0xFF3B4754)),
+        title: const Text(
           'Lịch Sử Khám Bệnh',
           style: TextStyle(
-            color: Colors.grey[700],
-            fontWeight: FontWeight.bold,
+            color: Color(0xFF1F2937),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
           ),
         ),
+        centerTitle: false,
         actions: [
           IconButton(
-            icon: Icon(Icons.more_vert, color: Colors.grey[700]),
+            icon: const Icon(Icons.more_vert, color: Color(0xFF6B7280)),
             onPressed: () {},
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSearchAndFilter(),
-            const SizedBox(height: 20),
-            _buildUpcomingAppointment(),
-            const SizedBox(height: 20),
-            Text(
-              'Lịch Khám Gần Đây',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.grey[800],
-              ),
-            ),
+            _buildSummaryCard(),
+            const SizedBox(height: 16),
+            _buildSearchSection(),
+            const SizedBox(height: 18),
+            _buildSectionHeading(),
             const SizedBox(height: 12),
             if (filteredAppointments.isEmpty)
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Text(
                     'Không tìm thấy lịch khám',
-                    style: TextStyle(color: Colors.grey[500]),
+                    style: TextStyle(color: Colors.grey[500], fontSize: 14),
                   ),
                 ),
               )
             else
-              ...filteredAppointments.map((apt) => _buildAppointmentTile(apt)),
+              ...filteredAppointments.map(_buildAppointmentTile),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSearchAndFilter() {
+  Widget _buildSummaryCard() {
+    final nextAppointment = appointments.firstWhere(
+      (a) => a.isUpcoming,
+      orElse: () => appointments.first,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(31),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.calendar_month,
+                  color: Color(0xFF2563EB),
+                  size: 26,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Lịch khám gần đây',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF111827),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Giữ lịch khám của bạn luôn cập nhật',
+                      style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Text(
+                  'ACTIVE',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.blue[700],
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDate(nextAppointment.appointmentDate),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        color: Color(0xFF111827),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      nextAppointment.doctorName,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    'Lần khám',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${appointments.length}',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      color: Color(0xFF111827),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildSummaryBadge(
+                  icon: Icons.check_circle,
+                  label: 'Hoàn thành',
+                  value:
+                      '${appointments.where((a) => !a.isUpcoming).length} lần',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSummaryBadge(
+                  icon: Icons.schedule,
+                  label: 'Sắp tới',
+                  value:
+                      '${appointments.where((a) => a.isUpcoming).length} lần',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryBadge({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, color: const Color(0xFF2563EB), size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF111827),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: searchController,
-          decoration: InputDecoration(
-            hintText: 'Tìm kiếm...',
-            prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-            suffixIcon: Icon(Icons.tune, color: Colors.blue[600]),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withAlpha(20),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.search, color: Color(0xFF9CA3AF)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'Tìm kiếm bác sĩ, bệnh viện...',
+                    hintStyle: TextStyle(
+                      color: Color(0xFF9CA3AF),
+                      fontSize: 14,
+                    ),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.filter_alt_outlined,
+                  color: Color(0xFF2563EB),
+                  size: 20,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildFilterChip('Tất cả'),
-              _buildFilterChip('Hoàn thành'),
-              _buildFilterChip('Sắp tới'),
+              _buildSelectionChip('Tất cả'),
+              _buildSelectionChip('Hoàn thành'),
+              _buildSelectionChip('Sắp tới'),
             ],
           ),
         ),
@@ -206,90 +432,115 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
+  Widget _buildSelectionChip(String label) {
     final isSelected = selectedFilter == label;
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(
+    return GestureDetector(
+      onTap: () => _onFilterChanged(label),
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2563EB) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? Colors.transparent : const Color(0xFFE5E7EB),
+          ),
+          boxShadow: [
+            if (isSelected)
+              BoxShadow(
+                color: Colors.blue.withAlpha(31),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+          ],
+        ),
+        child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[700],
-            fontWeight: FontWeight.w500,
+            color: isSelected ? Colors.white : const Color(0xFF4B5563),
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
           ),
-        ),
-        onSelected: (selected) {
-          _onFilterChanged(label);
-        },
-        backgroundColor: isSelected ? Colors.blue[600] : Colors.grey[200],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide.none,
         ),
       ),
     );
   }
 
-  Widget _buildUpcomingAppointment() {
-    final upcoming = appointments.where((a) => a.isUpcoming).toList();
-    if (upcoming.isEmpty) return const SizedBox.shrink();
-
-    final apt = upcoming.first;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.blue[50],
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.calendar_today, color: Colors.blue[600], size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lịch Khám Sắp Tới',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: Colors.blue[600],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${apt.appointmentDate.day}/${apt.appointmentDate.month}/${apt.appointmentDate.year}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-              ],
+  Widget _buildSectionHeading() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Lịch Khám Gần Đây',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF111827),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${filteredAppointments.length} mục',
+              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+            ),
+          ],
+        ),
+        TextButton(
+          onPressed: () {},
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            foregroundColor: const Color(0xFF2563EB),
+            textStyle: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          Icon(Icons.arrow_forward, color: Colors.blue[600]),
-        ],
-      ),
+          child: const Text('Xem thêm'),
+        ),
+      ],
     );
   }
 
   Widget _buildAppointmentTile(MedicalAppointment appointment) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(20),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.blue[100],
-                child: Icon(Icons.person, color: Colors.blue[600]),
+                radius: 26,
+                backgroundColor: const Color(0xFFEFF6FF),
+                child: Text(
+                  appointment.doctorName
+                      .split(' ')
+                      .take(2)
+                      .map((word) => word[0])
+                      .join(),
+                  style: const TextStyle(
+                    color: Color(0xFF2563EB),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,51 +548,85 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
                     Text(
                       appointment.doctorName,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
                       ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       appointment.specialization,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                      ),
                     ),
+                    const SizedBox(height: 4),
                     Text(
                       appointment.hospital,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF9CA3AF),
+                      ),
                     ),
                   ],
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: appointment.isUpcoming
+                      ? const Color(0xFFFFF7ED)
+                      : const Color(0xFFEFF6EE),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Text(
+                  appointment.status,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: appointment.isUpcoming
+                        ? const Color(0xFFB45309)
+                        : const Color(0xFF047857),
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: appointment.isUpcoming
-                  ? Colors.orange[100]
-                  : Colors.green[100],
-            ),
-            child: Text(
-              appointment.status,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: appointment.isUpcoming
-                    ? Colors.orange[700]
-                    : Colors.green[700],
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Row(
             children: [
-              Icon(Icons.calendar_today, size: 12, color: Colors.grey[500]),
-              const SizedBox(width: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.calendar_today,
+                  size: 16,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _formatDate(appointment.appointmentDate),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF4B5563),
+                  ),
+                ),
+              ),
               Text(
-                '${appointment.appointmentDate.day}/${appointment.appointmentDate.month}/${appointment.appointmentDate.year}',
-                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                appointment.notes,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
               ),
             ],
           ),

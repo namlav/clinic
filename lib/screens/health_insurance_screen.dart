@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../models/health_insurance_model.dart';
 
 class HealthInsuranceScreen extends StatefulWidget {
@@ -32,60 +32,90 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
     );
   }
 
+  String _formatCurrency(num amount) {
+    final rounded = amount.toInt();
+    return '${rounded.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]}.')} ₫';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.grey[700]),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF4B5563)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'Bảo Hiểm Y Tế',
           style: TextStyle(
-            color: Colors.grey[700],
-            fontWeight: FontWeight.bold,
+            color: Color(0xFF111827),
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.more_vert, color: Colors.grey[700]),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildInsuranceCard(),
+            _buildHeroCard(),
             const SizedBox(height: 20),
-            _buildInsuranceDetails(),
+            _buildCoverageCard(),
+            const SizedBox(height: 20),
+            _buildInfoHeader(),
+            const SizedBox(height: 12),
+            _buildDetailTile(
+              'Nhà cung cấp',
+              insurance.providerName,
+              Icons.business,
+            ),
+            const SizedBox(height: 10),
+            _buildDetailTile(
+              'Số chính sách',
+              insurance.policyNumber,
+              Icons.description,
+            ),
+            const SizedBox(height: 10),
+            _buildDetailTile(
+              'Phí hàng tháng',
+              _formatCurrency(insurance.monthlyPremium),
+              Icons.payments,
+            ),
+            const SizedBox(height: 10),
+            _buildDetailTile(
+              'Khấu trừ',
+              _formatCurrency(insurance.copay),
+              Icons.arrow_downward,
+            ),
+            const SizedBox(height: 20),
+            _buildActionButton('Tải hóa đơn'),
+            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildInsuranceCard() {
+  Widget _buildHeroCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          colors: [Colors.blue[600]!, Colors.blue[800]!],
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
+          colors: [Color(0xFF2563EB), Color(0xFF4F46E5)],
         ),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withValues(alpha: 0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.blue.withAlpha(45),
+            blurRadius: 24,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
@@ -93,84 +123,67 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Bảo Hiểm Y Tế',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                child: Text(
+                  insurance.providerName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.green,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-                child: Text(
-                  insurance.status,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDBEAFE),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Text(
+                  'ACTIVE',
+                  style: TextStyle(
+                    color: Color(0xFF1D4ED8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          Text(
+          const Text(
             'Số Bảo Hiểm',
-            style: TextStyle(color: Colors.blue[100], fontSize: 12),
+            style: TextStyle(
+              color: Color(0xFFBFDBFE),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
           ),
+          const SizedBox(height: 8),
           Text(
             insurance.insuranceNumber,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
             ),
           ),
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hiệu lực từ',
-                    style: TextStyle(color: Colors.blue[100], fontSize: 11),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${insurance.validFrom.day}/${insurance.validFrom.month}/${insurance.validFrom.year}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              _buildHeroDetail(
+                'Hiệu lực từ',
+                '${insurance.validFrom.day}/${insurance.validFrom.month}/${insurance.validFrom.year}',
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Hết hiệu lực',
-                    style: TextStyle(color: Colors.blue[100], fontSize: 11),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${insurance.validUntil.day}/${insurance.validUntil.month}/${insurance.validUntil.year}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              _buildHeroDetail(
+                'Hết hiệu lực',
+                '${insurance.validUntil.day}/${insurance.validUntil.month}/${insurance.validUntil.year}',
               ),
             ],
           ),
@@ -179,74 +192,211 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
     );
   }
 
-  Widget _buildInsuranceDetails() {
+  Widget _buildHeroDetail(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Chi tiết bảo hiểm',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: Colors.grey[800],
+          label,
+          style: const TextStyle(
+            color: Color(0xFFBFDBFE),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 12),
-        _buildDetailCard(
-          'Nhà cung cấp',
-          insurance.providerName,
-          Icons.business,
-        ),
-        _buildDetailCard(
-          'Số chính sách',
-          insurance.policyNumber,
-          Icons.description,
-        ),
-        _buildDetailCard(
-          'Bảo hiểm toàn bộ',
-          _formatCurrency(insurance.coverage),
-          Icons.shield,
-        ),
-        _buildDetailCard(
-          'Phí hàng tháng',
-          _formatCurrency(insurance.monthlyPremium),
-          Icons.payments,
-        ),
-        _buildDetailCard(
-          'Thanh toán',
-          _formatCurrency(insurance.copay),
-          Icons.local_hospital,
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildDetailCard(String label, String value, IconData icon) {
+  Widget _buildCoverageCard() {
+    final coveragePercent = insurance.coverage > 0
+        ? (insurance.copay / insurance.coverage).clamp(0.0, 1.0).toDouble()
+        : 0.0;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
         color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(20),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Khấu trừ',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Số tiền đã khấu trừ',
+                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatCurrency(insurance.copay),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${(coveragePercent * 100).round()}%',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF2563EB),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: LinearProgressIndicator(
+              value: coveragePercent,
+              minHeight: 10,
+              color: const Color(0xFF2563EB),
+              backgroundColor: const Color(0xFFEFF6FF),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${_formatCurrency(insurance.copay)} đã khấu trừ',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  '${_formatCurrency(insurance.coverage)} hạn mức',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(String text) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF2563EB),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoHeader() {
+    return const Text(
+      'Chi tiết bảo hiểm',
+      style: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+        color: Color(0xFF111827),
+      ),
+    );
+  }
+
+  Widget _buildDetailTile(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(18),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: Colors.blue[600], size: 24),
-          const SizedBox(width: 16),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: const Color(0xFF2563EB), size: 22),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
                   ),
                 ),
               ],
@@ -254,13 +404,6 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  String _formatCurrency(double amount) {
-    return '${amount.toStringAsFixed(0)} ₫'.replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]}.',
     );
   }
 }
