@@ -1,7 +1,6 @@
-import '../models/doctor_model.dart';
+import '../features/booking/models/doctor_model.dart';
 
 List<DoctorModel> doctors = [
-
   DoctorModel(
     name: "BS. Đinh Vinh Quang",
     specialty: "Thần kinh",
@@ -9,5 +8,4 @@ List<DoctorModel> doctors = [
     rating: 4.8,
     experience: "8 năm",
   ),
-
 ];

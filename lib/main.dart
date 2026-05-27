@@ -39,10 +39,10 @@ class _MainAppState extends State<MainApp> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = const [
-    ProfileScreen(),
-    SearchScreen(),
-    ScheduleScreen(),
-    ProfileScreen(),
+    // ProfileScreen(),
+    // SearchScreen(),
+    // ScheduleScreen(),
+    // ProfileScreen(),
   ];
 
   void _onNavItemTapped(int index) {

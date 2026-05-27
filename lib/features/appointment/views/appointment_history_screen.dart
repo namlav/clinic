@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import '../models/medical_appointment_model.dart';
+import '../../profile/models/medical_appointment_model.dart';
 
 class AppointmentHistoryScreen extends StatefulWidget {
   const AppointmentHistoryScreen({super.key});

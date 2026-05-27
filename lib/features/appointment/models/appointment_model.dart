@@ -1,19 +1,4 @@
 class AppointmentModel {
-<<<<<<< HEAD
-
-  final String doctorName;
-  final String date;
-  final String time;
-  final String status;
-
-  AppointmentModel({
-    required this.doctorName,
-    required this.date,
-    required this.time,
-    required this.status,
-  });
-}
-=======
   final String id;
   final String doctorName;
   final String specialty;
@@ -38,4 +23,3 @@ class AppointmentModel {
     this.transactionId,
   });
 }
->>>>>>> feature/duyen-booking-flow

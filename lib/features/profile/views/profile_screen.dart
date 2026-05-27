@@ -3,8 +3,8 @@ import '../models/patient_model.dart';
 import 'medical_records_screen.dart';
 import 'vaccination_history_screen.dart';
 import 'health_insurance_screen.dart';
-import 'appointment_history_screen.dart';
-import 'notification_settings_screen.dart';
+import '../../appointment/views/appointment_history_screen.dart';
+import '../../notification/views/notification_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
