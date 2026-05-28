@@ -167,3 +167,6 @@ app.*.symbols
 
 # vscode settings
 .vscode/
+
+# understand anything
+.understand-anything/
