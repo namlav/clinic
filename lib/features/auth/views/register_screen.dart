@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'otp_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
