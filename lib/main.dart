@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'features/auth/views/welcome_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -23,7 +24,7 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Color(0xFF111827)),
         ),
       ),
-      home: const MainApp(),
+      home: const WelcomeScreen(),
     );
   }
 }
