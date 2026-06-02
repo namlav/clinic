@@ -8,7 +8,6 @@ class BookingPage extends StatefulWidget {
 }
 
 class _BookingPageState extends State<BookingPage> {
-
   int selectedFilter = 0;
   int selectedBottomNav = 1;
 
@@ -22,76 +21,36 @@ class _BookingPageState extends State<BookingPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-
       body: SafeArea(
         child: SingleChildScrollView(
-
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-            ),
-
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 const SizedBox(height: 14),
-
+                
                 /// HEADER
                 Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
-
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-
                     Row(
                       children: [
-
-                        Container(
-                          width: 40,
-                          height: 40,
-
-                          decoration: BoxDecoration(
-                            color:
-                                const Color(0xFFECC9AE),
-
-                            borderRadius:
-                                BorderRadius.circular(
-                              20,
-                            ),
-                          ),
-
-                          child: const Icon(
-                            Icons.person,
-                            color: Color(0xFF6E5B4E),
-                            size: 20,
-                          ),
-                        ),
-
+                        
                         const SizedBox(width: 12),
-
                         const Text(
                           "SereneHealth",
-
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight:
-                                FontWeight.w700,
-
-                            color:
-                                Color(0xFF0057C2),
-
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF0057C2),
                             letterSpacing: -0.2,
                           ),
                         ),
                       ],
                     ),
-
                     const Icon(
                       Icons.search,
                       size: 24,
@@ -99,149 +58,87 @@ class _BookingPageState extends State<BookingPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 24),
 
                 /// SEARCH BOX
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-
-                    borderRadius:
-                        BorderRadius.circular(18),
-
+                    borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color:
-                            Colors.black.withOpacity(
-                          0.04,
-                        ),
-
+                        color: Colors.black.withOpacity(0.04),
                         blurRadius: 14,
-
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-
                   child: Row(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       const Padding(
-                        padding:
-                            EdgeInsets.only(top: 2),
-
+                        padding: EdgeInsets.only(top: 2),
                         child: Icon(
                           Icons.search,
                           size: 20,
                           color: Color(0xFFB5BDCA),
                         ),
                       ),
-
                       const SizedBox(width: 12),
-
-                      Expanded(
+                      const Expanded(
                         child: Text(
                           "Tìm kiếm bác sĩ chuyên khoa,\nphòng khám hoặc tình trạng bệnh...",
-
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.4,
-                            color:
-                                Color(0xFF9CA5B5),
+                            color: Color(0xFF9CA5B5),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 24),
 
                 /// FILTERS
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
-
                   children: List.generate(
                     filters.length,
                     (index) {
-
-                      bool isSelected =
-                          selectedFilter == index;
-
+                      bool isSelected = selectedFilter == index;
                       return GestureDetector(
                         onTap: () {
-
                           setState(() {
                             selectedFilter = index;
                           });
                         },
-
                         child: Container(
-                          padding:
-                              const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 12,
-                          ),
-
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                           decoration: BoxDecoration(
-                            color: isSelected
-                                ? const Color(
-                                    0xFF0057C2,
-                                  )
-                                : const Color(
-                                    0xFFD9ECFF,
-                                  ),
-
-                            borderRadius:
-                                BorderRadius.circular(
-                              22,
-                            ),
+                            color: isSelected ? const Color(0xFF0057C2) : const Color(0xFFD9ECFF),
+                            borderRadius: BorderRadius.circular(22),
                           ),
-
                           child: Row(
-                            mainAxisSize:
-                                MainAxisSize.min,
-
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-
                               if (index == 0)
                                 const Padding(
-                                  padding:
-                                      EdgeInsets.only(
-                                    right: 6,
-                                  ),
-
+                                  padding: EdgeInsets.only(right: 6),
                                   child: Icon(
                                     Icons.tune,
                                     size: 16,
                                     color: Colors.white,
                                   ),
                                 ),
-
                               Text(
                                 filters[index],
-
                                 style: TextStyle(
                                   fontSize: 14,
-                                  fontWeight:
-                                      FontWeight.w500,
-
-                                  color: isSelected
-                                      ? Colors.white
-                                      : const Color(
-                                          0xFF5B6B81,
-                                        ),
+                                  fontWeight: FontWeight.w500,
+                                  color: isSelected ? Colors.white : const Color(0xFF5B6B81),
                                 ),
                               ),
                             ],
@@ -251,81 +148,45 @@ class _BookingPageState extends State<BookingPage> {
                     },
                   ),
                 ),
-
                 const SizedBox(height: 28),
 
                 /// CARD 1
                 _doctorCard(
-                  image:
-                      "assets/images/ava1.jpg",
-
-                  name:
-                      "Dr. Sarah\nJenkins",
-
-                  specialty:
-                      "Chuyên gia\ntim mạch",
-
+                  image: "assets/images/ava1.jpg",
+                  name: "Dr. Sarah\nJenkins",
+                  specialty: "Chuyên gia\ntim mạch",
                   rating: "4.9",
-
-                  experience:
-                      "12Y EXPERIENCE",
-
+                  experience: "12Y EXPERIENCE",
                   buttonText: "Đặt lịch",
                 ),
-
                 const SizedBox(height: 18),
 
                 /// CARD 2
                 _doctorCard(
-                  image:
-                      "assets/images/ava1.jpg",
-
-                  name:
-                      "BS. Đinh\nVinh Quang",
-
-                  specialty:
-                      "Chuyên khoa\nthần kinh",
-
+                  image: "assets/images/ava1.jpg",
+                  name: "BS. Đinh\nVinh Quang",
+                  specialty: "Chuyên khoa\nthần kinh",
                   rating: "4.8",
-
-                  experience:
-                      "8Y EXPERIENCE",
-
+                  experience: "8Y EXPERIENCE",
                   buttonText: "Đặt lịch",
-
-                  subtitle:
-                      "Next: Tomorrow",
+                  subtitle: "Next: Tomorrow",
                 ),
-
                 const SizedBox(height: 18),
 
                 /// CARD 3
                 _largeDoctorCard(),
-
                 const SizedBox(height: 18),
 
                 /// CARD 4
                 _doctorCard(
-                  image:
-                      "assets/images/ava1.jpg",
-
-                  name:
-                      "Dr. James\nWilson",
-
-                  specialty:
-                      "Dental Surgeon",
-
+                  image: "assets/images/ava1.jpg",
+                  name: "Dr. James\nWilson",
+                  specialty: "Dental Surgeon",
                   rating: "4.7",
-
-                  experience:
-                      "10Y EXPERIENCE",
-
+                  experience: "10Y EXPERIENCE",
                   buttonText: "Đặt lịch",
-
-                  subtitle:
-                      "North Wing",
+                  subtitle: "North Wing",
                 ),
-
                 const SizedBox(height: 110),
               ],
             ),
@@ -335,59 +196,28 @@ class _BookingPageState extends State<BookingPage> {
 
       /// BOTTOM NAV
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 10,
-        ),
-
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(28),
             topRight: Radius.circular(28),
           ),
-
           boxShadow: [
             BoxShadow(
-              color:
-                  Colors.black.withOpacity(0.05),
-
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
           ],
         ),
-
         child: Row(
-          mainAxisAlignment:
-              MainAxisAlignment.spaceAround,
-
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-
-            _bottomItem(
-              0,
-              Icons.home_outlined,
-              "HOME",
-            ),
-
-            _selectedBottomItem(
-              1,
-              Icons.search,
-              "SEARCH",
-            ),
-
-            _bottomItem(
-              2,
-              Icons.calendar_today_outlined,
-              "SCHEDULE",
-            ),
-
-            _bottomItem(
-              3,
-              Icons.person_outline,
-              "PROFILE",
-            ),
+            _bottomItem(0, Icons.home_outlined, "HOME"),
+            _selectedBottomItem(1, Icons.search, "SEARCH"),
+            _bottomItem(2, Icons.calendar_today_outlined, "SCHEDULE"),
+            _bottomItem(3, Icons.person_outline, "PROFILE"),
           ],
         ),
       ),
@@ -404,111 +234,71 @@ class _BookingPageState extends State<BookingPage> {
     required String buttonText,
     String? subtitle,
   }) {
-
     return Container(
       padding: const EdgeInsets.all(18),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
-        borderRadius:
-            BorderRadius.circular(24),
-
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.black.withOpacity(0.05),
-
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 18,
-
             offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: Column(
         children: [
-
           Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
-
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(16),
-
+                borderRadius: BorderRadius.circular(16),
                 child: Image.asset(
                   image,
-
                   width: 96,
                   height: 96,
-
                   fit: BoxFit.cover,
                 ),
               ),
-
               const SizedBox(width: 16),
-
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment
-                              .spaceBetween,
-
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-
                         Expanded(
                           child: Text(
                             name,
-
                             style: const TextStyle(
                               fontSize: 16,
                               height: 1.4,
-                              fontWeight:
-                                  FontWeight.w700,
-
-                              color:
-                                  Color(0xFF1A1F36),
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1A1F36),
                             ),
                           ),
                         ),
-
                         _ratingBadge(rating),
                       ],
                     ),
-
                     const SizedBox(height: 6),
-
                     Text(
                       specialty,
-
                       style: const TextStyle(
                         fontSize: 14,
                         height: 1.4,
                         color: Color(0xFF6E7688),
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(
                       experience,
-
                       style: const TextStyle(
                         fontSize: 11,
-                        fontWeight:
-                            FontWeight.w600,
-
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 1,
-
                         color: Color(0xFFA5ADBA),
                       ),
                     ),
@@ -517,43 +307,24 @@ class _BookingPageState extends State<BookingPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
-
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-
               if (subtitle != null)
                 Row(
                   children: [
-
                     Icon(
-                      subtitle ==
-                              "North Wing"
-                          ? Icons
-                              .location_on_outlined
-                          : Icons
-                              .calendar_today_outlined,
-
+                      subtitle == "North Wing" ? Icons.location_on_outlined : Icons.calendar_today_outlined,
                       size: 15,
-
-                      color:
-                          const Color(0xFF6E7688),
+                      color: const Color(0xFF6E7688),
                     ),
-
                     const SizedBox(width: 4),
-
                     Text(
                       subtitle,
-
                       style: const TextStyle(
                         fontSize: 13,
-                        fontWeight:
-                            FontWeight.w500,
-
+                        fontWeight: FontWeight.w500,
                         color: Color(0xFF4F5B6D),
                       ),
                     ),
@@ -562,82 +333,41 @@ class _BookingPageState extends State<BookingPage> {
               else
                 Row(
                   children: [
-
                     _smallAvatar("SJ"),
-
                     const SizedBox(width: 6),
-
                     Container(
-                      padding:
-                          const EdgeInsets
-                              .symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color:
-                            const Color(
-                          0xFFE7F0FF,
-                        ),
-
-                        borderRadius:
-                            BorderRadius
-                                .circular(12),
+                        color: const Color(0xFFE7F0FF),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-
                       child: const Text(
                         "+2k",
-
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight:
-                              FontWeight.w600,
-
-                          color:
-                              Color(0xFF0057C2),
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0057C2),
                         ),
                       ),
                     ),
                   ],
                 ),
-
               ElevatedButton(
                 onPressed: () {},
-
-                style:
-                    ElevatedButton.styleFrom(
-                  backgroundColor:
-                      const Color(0xFF0057C2),
-
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0057C2),
                   elevation: 8,
-
-                  shadowColor:
-                      const Color(0x330057C2),
-
-                  padding:
-                      const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 14,
-                  ),
-
-                  shape:
-                      RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(
-                      14,
-                    ),
+                  shadowColor: const Color(0x330057C2),
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-
                 child: Text(
                   buttonText,
-
                   style: const TextStyle(
                     fontSize: 15,
-                    fontWeight:
-                        FontWeight.w600,
-
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
                 ),
@@ -651,123 +381,73 @@ class _BookingPageState extends State<BookingPage> {
 
   /// LARGE CARD
   Widget _largeDoctorCard() {
-
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-
-        borderRadius:
-            BorderRadius.circular(28),
-
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color:
-                Colors.black.withOpacity(0.05),
-
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 18,
-
             offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           ClipRRect(
-            borderRadius:
-                const BorderRadius.only(
+            borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(28),
               topRight: Radius.circular(28),
             ),
-
             child: Image.asset(
               "assets/images/ava1.jpg",
-
               width: double.infinity,
               height: 190,
-
               fit: BoxFit.cover,
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(20),
-
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 Row(
-                  mainAxisAlignment:
-                      MainAxisAlignment
-                          .spaceBetween,
-
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-
                     const Expanded(
                       child: Text(
                         "Dr. Elena\nRodriguez",
-
                         style: TextStyle(
                           fontSize: 18,
                           height: 1.45,
-                          fontWeight:
-                              FontWeight.w700,
-
-                          color:
-                              Color(0xFF1A1F36),
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A1F36),
                         ),
                       ),
                     ),
-
                     Container(
-                      padding:
-                          const EdgeInsets
-                              .symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: BoxDecoration(
-                        color:
-                            const Color(
-                          0xFFE8F0FF,
-                        ),
-
-                        borderRadius:
-                            BorderRadius
-                                .circular(14),
+                        color: const Color(0xFFE8F0FF),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-
                       child: const Row(
                         children: [
-
                           Icon(
                             Icons.verified,
                             size: 15,
-                            color:
-                                Color(0xFF0057C2),
+                            color: Color(0xFF0057C2),
                           ),
-
-                          SizedBox(width: 4),
-
+                          const SizedBox(width: 4),
                           Text(
                             "Highly\nRated",
-
                             style: TextStyle(
                               fontSize: 11,
                               height: 1.3,
-                              fontWeight:
-                                  FontWeight.w700,
-
-                              color:
-                                  Color(0xFF0057C2),
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0057C2),
                             ),
                           ),
                         ],
@@ -775,107 +455,64 @@ class _BookingPageState extends State<BookingPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 6),
-
                 const Text(
                   "Chuyên gia nhi khoa",
-
                   style: TextStyle(
                     fontSize: 14,
                     color: Color(0xFF6E7688),
                   ),
                 ),
-
                 const SizedBox(height: 8),
-
                 const Text(
                   "Chuyên về chăm sóc sơ sinh và nhi khoa phát triển, ...",
-
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.5,
                     color: Color(0xFF6E7688),
                   ),
                 ),
-
                 const SizedBox(height: 14),
-
                 Row(
                   children: [
-
-                    const Icon(
-                      Icons.star_border,
-                      size: 16,
-                    ),
-
+                    const Icon(Icons.star_border, size: 16),
                     const SizedBox(width: 4),
-
                     const Text(
                       "5.0",
-
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight:
-                            FontWeight.w700,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-
                     const SizedBox(width: 16),
-
                     const Text(
                       "15Y EXPERIENCE",
-
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight:
-                            FontWeight.w600,
-
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 1,
-
                         color: Color(0xFFA5ADBA),
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
-
                 SizedBox(
                   width: double.infinity,
-
                   child: ElevatedButton(
                     onPressed: () {},
-
-                    style:
-                        ElevatedButton.styleFrom(
-                      backgroundColor:
-                          const Color(
-                        0xFF0057C2,
-                      ),
-
-                      padding:
-                          const EdgeInsets
-                              .symmetric(
-                        vertical: 16,
-                      ),
-
-                      shape:
-                          RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius
-                                .circular(16),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0057C2),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-
                     child: const Text(
                       "Đặt lịch",
-
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight:
-                            FontWeight.w700,
-
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
                     ),
@@ -890,35 +527,22 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   Widget _ratingBadge(String rating) {
-
     return Container(
-      padding:
-          const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
-      ),
-
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFE8F0FF),
-
-        borderRadius:
-            BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(10),
       ),
-
       child: Row(
         children: [
-
           const Icon(
             Icons.star,
             size: 14,
             color: Color(0xFF0057C2),
           ),
-
           const SizedBox(width: 3),
-
           Text(
             rating,
-
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
@@ -931,22 +555,16 @@ class _BookingPageState extends State<BookingPage> {
   }
 
   Widget _smallAvatar(String text) {
-
     return Container(
       width: 32,
       height: 32,
-
       decoration: BoxDecoration(
         color: const Color(0xFFDCE6F9),
-
-        borderRadius:
-            BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(16),
       ),
-
       child: Center(
         child: Text(
           text,
-
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -956,44 +574,28 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  Widget _bottomItem(
-    int index,
-    IconData icon,
-    String label,
-  ) {
-
+  Widget _bottomItem(int index, IconData icon, String label) {
     return GestureDetector(
       onTap: () {
-
         setState(() {
           selectedBottomNav = index;
         });
       },
-
       child: Column(
         mainAxisSize: MainAxisSize.min,
-
         children: [
-
           Icon(
             icon,
-
             size: 22,
-
             color: const Color(0xFFB1BAC8),
           ),
-
           const SizedBox(height: 4),
-
           Text(
             label,
-
             style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-
               letterSpacing: 0.6,
-
               color: Color(0xFFB1BAC8),
             ),
           ),
@@ -1002,66 +604,41 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  Widget _selectedBottomItem(
-    int index,
-    IconData icon,
-    String label,
-  ) {
-
+  Widget _selectedBottomItem(int index, IconData icon, String label) {
     return GestureDetector(
       onTap: () {
-
         setState(() {
           selectedBottomNav = index;
         });
       },
-
       child: Container(
-        padding:
-            const EdgeInsets.symmetric(
-          horizontal: 22,
-          vertical: 10,
-        ),
-
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
         decoration: BoxDecoration(
           color: const Color(0xFF0057C2),
-
-          borderRadius:
-              BorderRadius.circular(18),
-
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color:
-                  Colors.blue.withOpacity(0.2),
-
+              color: Colors.blue.withOpacity(0.2),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-
         child: Column(
           mainAxisSize: MainAxisSize.min,
-
           children: [
-
             Icon(
               icon,
               size: 20,
               color: Colors.white,
             ),
-
             const SizedBox(height: 4),
-
             Text(
               label,
-
               style: const TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-
                 letterSpacing: 0.6,
-
                 color: Colors.white,
               ),
             ),
