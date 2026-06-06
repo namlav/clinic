@@ -170,3 +170,6 @@ app.*.symbols
 
 # understand anything
 .understand-anything/
+
+# environment variables
+.env
