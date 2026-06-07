@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class BookingPage extends StatefulWidget {
   const BookingPage({super.key});
@@ -19,6 +20,26 @@ class _BookingPageState extends State<BookingPage> {
     "Da liễu",
   ];
 
+  late Future<List<Map<String, dynamic>>> _doctorsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _doctorsFuture = _fetchDoctors();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchDoctors() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('doctors')
+          .select('*');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      // Trả về mảng rỗng nếu xảy ra lỗi kết nối API
+      return [];
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -38,7 +59,6 @@ class _BookingPageState extends State<BookingPage> {
                   children: [
                     Row(
                       children: [
-                        
                         const SizedBox(width: 12),
                         const Text(
                           "SereneHealth",
@@ -150,43 +170,66 @@ class _BookingPageState extends State<BookingPage> {
                 ),
                 const SizedBox(height: 28),
 
-                /// CARD 1
-                _doctorCard(
-                  image: "assets/images/ava1.jpg",
-                  name: "Dr. Sarah\nJenkins",
-                  specialty: "Chuyên gia\ntim mạch",
-                  rating: "4.9",
-                  experience: "12Y EXPERIENCE",
-                  buttonText: "Đặt lịch",
-                ),
-                const SizedBox(height: 18),
+                /// DANH SÁCH BÁC SĨ 
+                FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _doctorsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24.0),
+                          child: CircularProgressIndicator(color: Color(0xFF0057C2)),
+                        ),
+                      );
+                    }
+                    
+                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24.0),
+                          child: Text(
+                            "Không thể tải danh sách bác sĩ",
+                            style: TextStyle(color: Color(0xFF6E7688)),
+                          ),
+                        ),
+                      );
+                    }
 
-                /// CARD 2
-                _doctorCard(
-                  image: "assets/images/ava1.jpg",
-                  name: "BS. Đinh\nVinh Quang",
-                  specialty: "Chuyên khoa\nthần kinh",
-                  rating: "4.8",
-                  experience: "8Y EXPERIENCE",
-                  buttonText: "Đặt lịch",
-                  subtitle: "Next: Tomorrow",
-                ),
-                const SizedBox(height: 18),
+                    final doctors = snapshot.data!;
 
-                /// CARD 3
-                _largeDoctorCard(),
-                const SizedBox(height: 18),
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: doctors.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 18),
+                      itemBuilder: (context, index) {
+                        final doc = doctors[index];
+                        
+                        if (index == 2) {
+                          return _largeDoctorCard(
+                            image: doc['avatarurl'] ?? "assets/images/ava1.jpg",
+                            name: (doc['fullname'] ?? "Bác sĩ").toString().replaceAll(' ', '\n'),
+                            specialty: doc['title'] ?? "Chuyên gia y tế",
+                            rating: (doc['rating'] ?? 5.0).toString(),
+                            experience: "${doc['experienceyears'] ?? 5}Y EXPERIENCE",
+                            bio: doc['bio'] ?? "Chuyên về thăm khám lâm sàng và điều trị nội khoa...",
+                          );
+                        }
 
-                /// CARD 4
-                _doctorCard(
-                  image: "assets/images/ava1.jpg",
-                  name: "Dr. James\nWilson",
-                  specialty: "Dental Surgeon",
-                  rating: "4.7",
-                  experience: "10Y EXPERIENCE",
-                  buttonText: "Đặt lịch",
-                  subtitle: "North Wing",
+                        return _doctorCard(
+                          image: doc['avatarurl'] ?? "assets/images/ava1.jpg",
+                          name: (doc['fullname'] ?? "Bác sĩ").toString().replaceAll(' ', '\n'),
+                          specialty: (doc['title'] ?? "Chuyên khoa").toString().replaceAll(' ', '\n'),
+                          rating: (doc['rating'] ?? 5.0).toString(),
+                          experience: "${doc['experienceyears'] ?? 5}Y EXPERIENCE",
+                          buttonText: "Đặt lịch",
+                          subtitle: index % 2 == 0 ? "North Wing" : "Next: Tomorrow",
+                        );
+                      },
+                    );
+                  },
                 ),
+                
                 const SizedBox(height: 110),
               ],
             ),
@@ -224,7 +267,6 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  /// NORMAL CARD
   Widget _doctorCard({
     required String image,
     required String name,
@@ -254,12 +296,25 @@ class _BookingPageState extends State<BookingPage> {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  image,
-                  width: 96,
-                  height: 96,
-                  fit: BoxFit.cover,
-                ),
+                child: image.startsWith('assets/')
+                    ? Image.asset(
+                        image,
+                        width: 96,
+                        height: 96,
+                        fit: BoxFit.cover,
+                      )
+                    : Image.network(
+                        image,
+                        width: 96,
+                        height: 96,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Image.asset(
+                          "assets/images/ava1.jpg",
+                          width: 96,
+                          height: 96,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -379,8 +434,14 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  /// LARGE CARD
-  Widget _largeDoctorCard() {
+  Widget _largeDoctorCard({
+    required String image,
+    required String name,
+    required String specialty,
+    required String rating,
+    required String experience,
+    required String bio,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -401,12 +462,25 @@ class _BookingPageState extends State<BookingPage> {
               topLeft: Radius.circular(28),
               topRight: Radius.circular(28),
             ),
-            child: Image.asset(
-              "assets/images/ava1.jpg",
-              width: double.infinity,
-              height: 190,
-              fit: BoxFit.cover,
-            ),
+            child: image.startsWith('assets/')
+                ? Image.asset(
+                    image,
+                    width: double.infinity,
+                    height: 190,
+                    fit: BoxFit.cover,
+                  )
+                : Image.network(
+                    image,
+                    width: double.infinity,
+                    height: 190,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Image.asset(
+                      "assets/images/ava1.jpg",
+                      width: double.infinity,
+                      height: 190,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.all(20),
@@ -416,10 +490,10 @@ class _BookingPageState extends State<BookingPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        "Dr. Elena\nRodriguez",
-                        style: TextStyle(
+                        name,
+                        style: const TextStyle(
                           fontSize: 18,
                           height: 1.45,
                           fontWeight: FontWeight.w700,
@@ -440,7 +514,7 @@ class _BookingPageState extends State<BookingPage> {
                             size: 15,
                             color: Color(0xFF0057C2),
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: 4),
                           Text(
                             "Highly\nRated",
                             style: TextStyle(
@@ -456,17 +530,17 @@ class _BookingPageState extends State<BookingPage> {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  "Chuyên gia nhi khoa",
-                  style: TextStyle(
+                Text(
+                  specialty,
+                  style: const TextStyle(
                     fontSize: 14,
                     color: Color(0xFF6E7688),
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  "Chuyên về chăm sóc sơ sinh và nhi khoa phát triển, ...",
-                  style: TextStyle(
+                Text(
+                  bio,
+                  style: const TextStyle(
                     fontSize: 14,
                     height: 1.5,
                     color: Color(0xFF6E7688),
@@ -477,17 +551,17 @@ class _BookingPageState extends State<BookingPage> {
                   children: [
                     const Icon(Icons.star_border, size: 16),
                     const SizedBox(width: 4),
-                    const Text(
-                      "5.0",
-                      style: TextStyle(
+                    Text(
+                      rating,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(width: 16),
-                    const Text(
-                      "15Y EXPERIENCE",
-                      style: TextStyle(
+                    Text(
+                      experience,
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1,
