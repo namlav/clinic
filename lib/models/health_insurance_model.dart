@@ -1,25 +1,43 @@
 class HealthInsurance {
-  final String id;
-  final String providerName;
-  final String insuranceNumber;
-  final String policyNumber;
-  final DateTime validFrom;
-  final DateTime validUntil;
-  final double coverage;
-  final double monthlyPremium;
-  final double copay;
-  final String status;
+  final int insuranceId;
+  final int userId;
+  final String cardNumber;
+  final String? providerName;
+  final String? planName;
+  final String? status;
+  final String? issuePlace;
+  final double? deductibleTotal;
+  final double? deductibleUsed;
+  final double? medicalServiceLimit;
+  final double? pharmacyLimit;
 
   HealthInsurance({
-    required this.id,
-    required this.providerName,
-    required this.insuranceNumber,
-    required this.policyNumber,
-    required this.validFrom,
-    required this.validUntil,
-    required this.coverage,
-    required this.monthlyPremium,
-    required this.copay,
-    required this.status,
+    required this.insuranceId,
+    required this.userId,
+    required this.cardNumber,
+    this.providerName,
+    this.planName,
+    this.status,
+    this.issuePlace,
+    this.deductibleTotal,
+    this.deductibleUsed,
+    this.medicalServiceLimit,
+    this.pharmacyLimit,
   });
+
+  factory HealthInsurance.fromJson(Map<String, dynamic> json) {
+    return HealthInsurance(
+      insuranceId: json['insuranceid'] ?? 0,
+      userId: json['userid'] ?? 0,
+      cardNumber: json['cardnumber'] ?? '',
+      providerName: json['providername'],
+      planName: json['planname'],
+      status: json['status'],
+      issuePlace: json['issueplace'],
+      deductibleTotal: json['deductibletotal']?.toDouble(),
+      deductibleUsed: json['deductibleused']?.toDouble(),
+      medicalServiceLimit: json['medicalservicelimit']?.toDouble(),
+      pharmacyLimit: json['pharmacylimit']?.toDouble(),
+    );
+  }
 }

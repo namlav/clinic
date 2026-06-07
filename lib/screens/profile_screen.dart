@@ -1,5 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
+import '../models/health_metrics_model.dart';
+import '../services/patient_repository.dart';
+import '../services/health_metrics_repository.dart';
+import '../services/supabase_service.dart';
 import 'medical_records_screen.dart';
 import 'vaccination_history_screen.dart';
 import 'health_insurance_screen.dart';
@@ -14,366 +18,366 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late Patient patient;
+  final PatientRepository _patientRepository = PatientRepository();
+  final HealthMetricsRepository _healthMetricsRepository = HealthMetricsRepository();
+
+  Patient? patient;
+  HealthMetrics? latestMetrics;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _initializeMockData();
+    _loadUserData();
   }
 
-  void _initializeMockData() {
-    patient = Patient(
-      id: '1',
-      fullName: 'Nguyễn Khỏe Khoắn',
-      email: 'nguyen.khoai@example.com',
-      phone: '+84 123 456 789',
-      avatarUrl: 'assets/avatar.jpg',
-      memberType: 'Premium Member',
-      memberSince: DateTime(2023, 4, 21),
-      heartRate: 72,
-      bloodPressure: '120/80',
-      weight: 70,
-      height: 175,
-    );
+  Future<void> _loadUserData() async {
+    try {
+      final userData = await _patientRepository.getCurrentUser();
+      final metricsData = userData != null
+          ? await _healthMetricsRepository.getLatestMetrics(userData.userId)
+          : null;
+
+      setState(() {
+        patient = userData;
+        latestMetrics = metricsData;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading user data: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8FAFB),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (patient == null) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF8FAFB),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Không thể tải dữ liệu người dùng'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadUserData,
+                child: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FB),
+      backgroundColor: const Color(0xFFF8FAFB),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
+        elevation: 1,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(Icons.menu, color: Colors.grey[700], size: 20),
+        ),
         title: const Text(
-          'SereneHealth',
+          'Profile bệnh nhân',
           style: TextStyle(
-            color: Color(0xFF111827),
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
+            color: Color(0xFF666666),
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.notifications_outlined,
-              color: Color(0xFF4B5563),
-            ),
+            icon: Icon(Icons.notifications_outlined, color: Colors.grey[700]),
             onPressed: () {},
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildProfileCard(),
-            const SizedBox(height: 18),
-            _buildHealthOverviewCard(),
-            const SizedBox(height: 18),
-            _buildSectionTitle('Quản lý hồ sơ'),
-            const SizedBox(height: 12),
-            _buildFeatureGrid(),
-            const SizedBox(height: 20),
-            _buildSectionTitle('Cài đặt'),
-            const SizedBox(height: 12),
-            _buildSettingsTile('🔔 Thông Báo', 'notification_settings'),
-            const SizedBox(height: 10),
-            _buildSettingsTile('❓ Hỗ Trợ', null),
-            const SizedBox(height: 10),
-            _buildSettingsTile('🚪 Đăng xuất', null),
+            CircleAvatar(
+              radius: 55,
+              backgroundColor: const Color(0xFFE8F4F8),
+              child: Icon(Icons.person, size: 70, color: Colors.blue[600]),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              patient!.fullName,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1F1F1F),
+              ),
+            ),
+            Text(
+              patient!.membershipTier ?? 'Premium Member',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF0066CC),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            Text(
+              'Thành viên từ ${patient!.joinedDate?.day}/${patient!.joinedDate?.month}/${patient!.joinedDate?.year}',
+              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+            ),
             const SizedBox(height: 24),
+            _buildHealthStats(),
+            const SizedBox(height: 24),
+            _buildMenuSection(),
+            const SizedBox(height: 24),
+            _buildSettingsSection(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildHealthStats() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
         color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.grey[200]!, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withAlpha(25),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 36,
-            backgroundColor: const Color(0xFFEFF6FF),
-            backgroundImage: AssetImage(patient.avatarUrl),
-            child: patient.avatarUrl.isEmpty
-                ? const Icon(Icons.person, color: Color(0xFF2563EB), size: 36)
-                : null,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            patient.fullName,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF111827),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            patient.memberType,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF2563EB),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Thành viên từ ${patient.memberSince.day}/${patient.memberSince.month}/${patient.memberSince.year}',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildStatusBadge(
-                'ACTIVE',
-                const Color(0xFFEFF6FF),
-                const Color(0xFF2563EB),
-              ),
-              const SizedBox(width: 10),
-              _buildStatusBadge(
-                'Premium',
-                const Color(0xFFEEF2FF),
-                const Color(0xFF4338CA),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(String label, Color background, Color textColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.w700,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHealthOverviewCard() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(20),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Tình Trạng Sức Khỏe',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF111827),
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.grey[800],
             ),
           ),
-          const SizedBox(height: 18),
-          _buildHealthStat('72', 'bpm', 'Nhịp Tim'),
           const SizedBox(height: 16),
-          _buildHealthStat('120/80', '', 'Huyết Áp'),
-          const SizedBox(height: 16),
-          _buildHealthStat('70', 'kg', 'Cân Nặng'),
+          if (latestMetrics != null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem('❤️', '${latestMetrics!.heartRate ?? '--'}', 'lần', 'Nhịp Tim'),
+                _buildStatItem(
+                  '📊',
+                  '${latestMetrics!.bloodPressureSys ?? '--'}/${latestMetrics!.bloodPressureDia ?? '--'}',
+                  '',
+                  'Huyết Áp',
+                ),
+                _buildStatItem('⚖️', '${latestMetrics!.weightKg ?? '--'}', 'kg', 'Cân Nặng'),
+              ],
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Chưa có dữ liệu',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                ),
+              ],
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildHealthStat(String value, String unit, String label) {
+  Widget _buildStatItem(String icon, String value, String unit, String label) {
+    return Column(
+      children: [
+        Text(icon, style: const TextStyle(fontSize: 28)),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+            color: Color(0xFF1F1F1F),
+          ),
+        ),
+        if (unit.isNotEmpty)
+          Text(
+            unit,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMenuSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF111827),
-              ),
-            ),
-            if (unit.isNotEmpty) ...[
-              const SizedBox(width: 6),
-              Text(
-                unit,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 6),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-        ),
+        _buildMenuItem('🏥 Hồ Sơ Y Tế', 'medical_records'),
+        const SizedBox(height: 10),
+        _buildMenuItem('🛡️ Bảo Hiểm Y Tế', 'health_insurance'),
+        const SizedBox(height: 10),
+        _buildMenuItem('💉 Lịch Sử Tiêm Chủng', 'vaccination_history'),
+        const SizedBox(height: 10),
+        _buildMenuItem('📋 Lịch Sử Khám Bệnh', 'appointment_history'),
       ],
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF111827),
+  Widget _buildMenuItem(String title, String route) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        border: Border.all(color: Colors.grey[200]!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        onTap: () => _navigateToScreen(route),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Color(0xFF1F1F1F),
+          ),
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 14,
+          color: Colors.grey[400],
+        ),
       ),
     );
   }
 
-  Widget _buildFeatureGrid() {
+  Widget _buildSettingsSection() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildFeatureTile('Hồ Sơ Y Tế', Icons.folder_shared, 'medical_records'),
-        const SizedBox(height: 12),
-        _buildFeatureTile('Bảo Hiểm Y Tế', Icons.shield, 'health_insurance'),
-        const SizedBox(height: 12),
-        _buildFeatureTile(
-          'Lịch Sử Tiêm Chủng',
-          Icons.vaccines,
-          'vaccination_history',
+        Text(
+          'Cài Đặt',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: Colors.grey[800],
+          ),
         ),
         const SizedBox(height: 12),
-        _buildFeatureTile(
-          'Lịch Sử Khám Bệnh',
-          Icons.calendar_month,
-          'appointment_history',
-        ),
+        _buildSettingItem('🔔 Thông Báo', 'notification_settings'),
+        const SizedBox(height: 10),
+        _buildSettingItem('❓ Hỗ Trợ', null),
+        const SizedBox(height: 10),
+        _buildSettingItem('🚪 Đăng xuất', null),
       ],
     );
   }
 
-  Widget _buildFeatureTile(String title, IconData icon, String route) {
-    return GestureDetector(
-      onTap: () => _navigateToScreen(route),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withAlpha(15),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
+  Widget _buildSettingItem(String title, String? route) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        border: Border.all(color: Colors.grey[200]!, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        onTap: () {
+          if (title == '🚪 Đăng xuất') {
+            _logout();
+          } else if (route != null) {
+            _navigateToScreen(route);
+          }
+        },
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: title == '🚪 Đăng xuất' ? Colors.red[600] : const Color(0xFF1F1F1F),
+          ),
         ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(icon, color: const Color(0xFF2563EB), size: 22),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF111827),
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Color(0xFF9CA3AF),
-            ),
-          ],
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 14,
+          color: Colors.grey[400],
         ),
       ),
     );
   }
 
-  Widget _buildSettingsTile(String title, String? route) {
-    return GestureDetector(
-      onTap: () {
-        if (route != null) {
-          _navigateToScreen(route);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withAlpha(15),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111827),
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Color(0xFF9CA3AF),
-            ),
-          ],
-        ),
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Đăng xuất'),
+        content: const Text('Bạn có chắc chắn muốn đăng xuất?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Đăng xuất', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
+
+    if (confirmed ?? false) {
+      await SupabaseService().signOut();
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      }
+    }
   }
 
   void _navigateToScreen(String route) {
@@ -397,6 +401,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return;
     }
-    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => screen),
+    );
   }
 }
