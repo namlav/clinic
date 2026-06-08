@@ -8,8 +8,6 @@ class ScheduleListScreen extends StatefulWidget {
 }
 
 class _ScheduleListScreenState extends State<ScheduleListScreen> {
-  int _selectedIndex = 2;
-
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -26,30 +24,6 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> {
           ),
         ),
         body: TabBarView(children: [_buildUpcomingTab(), _buildCompletedTab()]),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF003D81),
-          unselectedItemColor: Colors.grey,
-          onTap: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-          },
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Trang chủ'),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search),
-              label: 'Tìm kiếm',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today),
-              label: 'Lịch trình',
-            ),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Hồ sơ'),
-          ],
-        ),
       ),
     );
   }

@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'create_new_password_screen.dart';
-import '../../home/views/home_screen.dart'; // Đảm bảo đúng path
+import '../../../main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -55,9 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pop(context);
 
         if (response.user != null) {
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const MainApp()),
+            (route) => false,
           );
         }
       } on AuthException catch (e) {

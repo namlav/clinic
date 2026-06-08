@@ -5,6 +5,7 @@ import 'vaccination_history_screen.dart';
 import 'health_insurance_screen.dart';
 import '../../appointment/views/appointment_history_screen.dart';
 import '../../notification/views/notification_settings_screen.dart';
+import '../../../widgets/fade_page_route.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -397,6 +398,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return;
     }
-    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+    Navigator.push(
+      context,
+      FadePageRoute(builder: (context) => screen),
+    );
   }
 }
