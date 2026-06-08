@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'search_screen.dart';
+import '../../../widgets/fade_page_route.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onSearchTap;
+
+  const HomeScreen({super.key, this.onSearchTap});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -92,12 +95,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   /// SEARCH
                   IconButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SearchScreen(),
-                        ),
-                      );
+                      if (widget.onSearchTap != null) {
+                        widget.onSearchTap!();
+                      } else {
+                        Navigator.push(
+                          context,
+                          FadePageRoute(
+                            builder: (context) => const SearchScreen(),
+                          ),
+                        );
+                      }
                     },
 
                     icon: const Icon(
@@ -528,57 +535,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
 
-      /// BOTTOM NAV
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            /// ACTIVE TAB
-            Container(
-              width: 72,
-              height: 58,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1565C0),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.home_rounded, color: Colors.white, size: 22),
-                  SizedBox(height: 2),
-                  Text(
-                    "HOME",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            _navItem(Icons.search, "SEARCH"),
-            _navItem(Icons.calendar_today_outlined, "SCHEDULE"),
-            _navItem(Icons.person_outline, "PROFILE"),
-          ],
-        ),
-      ),
     );
   }
 
@@ -601,25 +557,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(value, style: const TextStyle(color: Colors.white)),
         ],
       ),
-    );
-  }
-
-  static Widget _navItem(IconData icon, String title) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: const Color(0xFF9AA4B2), size: 20),
-        const SizedBox(height: 4),
-        Text(
-          title,
-          style: const TextStyle(
-            color: Color(0xFF9AA4B2),
-            fontSize: 9,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ],
     );
   }
 }
