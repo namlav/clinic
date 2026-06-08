@@ -17,7 +17,7 @@ class UserModel {
       'name': name,
       'email': email,
       'phone': phone,
-      'createdAt': DateTime.now().toIso8601String(), 
+      'createdAt': DateTime.now().toIso8601String(),
     };
   }
 }
