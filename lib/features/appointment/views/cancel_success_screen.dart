@@ -140,7 +140,7 @@ class CancelSuccessScreen extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Về trang chủ',
+                  'Về trang lịch trình',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

@@ -83,10 +83,7 @@ class _MainAppState extends State<MainApp> {
   Widget _buildPage(int index) {
     switch (index) {
       case 0:
-        return HomeScreen(
-          onSearchTap: () => setState(() => _currentIndex = 1),
-          onScheduleTap: () => setState(() => _currentIndex = 2),
-        );
+        return HomeScreen(onSearchTap: () => setState(() => _currentIndex = 1));
       case 1:
         return const SearchScreen();
       case 2:
