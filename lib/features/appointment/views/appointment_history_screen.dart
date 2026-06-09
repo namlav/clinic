@@ -436,6 +436,34 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
     );
   }
 
+  Color _getStatusBackgroundColor(String status) {
+    final lowerStatus = status.toLowerCase();
+    if (lowerStatus.contains('cancel')) {
+      return const Color(0xFFFFEAEA);
+    } else if (lowerStatus.contains('pending') || lowerStatus.contains('chờ')) {
+      return const Color(0xFFFFF7ED);
+    } else if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) {
+      return const Color(0xFFEFF6FF);
+    } else if (lowerStatus.contains('complete') || lowerStatus.contains('hoàn')) {
+      return const Color(0xFFEFF6EE);
+    }
+    return const Color(0xFFF3F4F6);
+  }
+
+  Color _getStatusTextColor(String status) {
+    final lowerStatus = status.toLowerCase();
+    if (lowerStatus.contains('cancel')) {
+      return const Color(0xFFDC2626);
+    } else if (lowerStatus.contains('pending') || lowerStatus.contains('chờ')) {
+      return const Color(0xFFB45309);
+    } else if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) {
+      return const Color(0xFF2563EB);
+    } else if (lowerStatus.contains('complete') || lowerStatus.contains('hoàn')) {
+      return const Color(0xFF047857);
+    }
+    return const Color(0xFF6B7280);
+  }
+
   Widget _buildSectionHeading(int count) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -548,9 +576,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: appointment.isUpcoming
-                      ? const Color(0xFFFFF7ED)
-                      : const Color(0xFFEFF6EE),
+                  color: _getStatusBackgroundColor(appointment.status),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Text(
@@ -558,9 +584,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: appointment.isUpcoming
-                        ? const Color(0xFFB45309)
-                        : const Color(0xFF047857),
+                    color: _getStatusTextColor(appointment.status),
                   ),
                 ),
               ),

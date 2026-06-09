@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/health_record_model.dart';
+import '../models/patient_model.dart';
 
 class MedicalRecordsScreen extends StatefulWidget {
   const MedicalRecordsScreen({super.key});
@@ -11,12 +12,25 @@ class MedicalRecordsScreen extends StatefulWidget {
 class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
   late TextEditingController searchController;
   List<HealthRecord> filteredRecords = [];
+  Patient? patient;
 
   @override
   void initState() {
     super.initState();
     searchController = TextEditingController();
     searchController.addListener(_filterRecords);
+    _loadPatient();
+  }
+
+  Future<void> _loadPatient() async {
+    try {
+      final p = await Patient.fetch();
+      setState(() {
+        patient = p;
+      });
+    } catch (e) {
+      // Patient data not available
+    }
   }
 
   @override
@@ -134,25 +148,27 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: const Color(0xFFEFF6FF),
-                backgroundImage: const AssetImage('assets/avatar.jpg'),
+                backgroundImage: patient?.avatarUrl != null && patient!.avatarUrl.isNotEmpty
+                    ? AssetImage(patient!.avatarUrl)
+                    : const AssetImage('assets/avatar.jpg'),
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      'Nguyễn Khỏe Khoắn',
-                      style: TextStyle(
+                      patient?.fullName ?? 'Người dùng',
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF111827),
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
-                      'Patient ID: #564774',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                      'Patient ID: #${patient?.id ?? ''}',
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                     ),
                   ],
                 ),
@@ -166,26 +182,6 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
               fontSize: 14,
               fontWeight: FontWeight.w700,
               color: Color(0xFF111827),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Tìm kiếm hồ sơ...',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
-                  ),
-                ),
-              ],
             ),
           ),
         ],

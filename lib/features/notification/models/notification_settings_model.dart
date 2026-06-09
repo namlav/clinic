@@ -100,10 +100,70 @@ class NotificationSettings {
     try {
       final supabase = Supabase.instance.client;
       final response = await supabase.from('notificationsettings').select();
+
+      if ((response as List).isEmpty) {
+        return _getDefaultSettings();
+      }
+
       return (response as List).map((item) => NotificationSettings.fromJson(item)).toList();
     } catch (e) {
-      throw Exception('Lỗi lấy cài đặt thông báo: $e');
+      return _getDefaultSettings();
     }
+  }
+
+  static List<NotificationSettings> _getDefaultSettings() {
+    return [
+      NotificationSettings(
+        id: '1',
+        title: 'Nhận báo cáo lịch biểu Email',
+        description: 'Bạn sẽ nhận được email về lịch khám hàng ngày',
+        isEnabled: true,
+        icon: 'email',
+      ),
+      NotificationSettings(
+        id: '2',
+        title: 'Thông báo qua tin nhắn SMS',
+        description: 'Bạn sẽ nhận được lời nhắc nhở qua SMS',
+        isEnabled: true,
+        icon: 'sms',
+      ),
+      NotificationSettings(
+        id: '3',
+        title: 'Nhắc nhở lịch khám',
+        description: 'Bạn sẽ nhận lời nhắc trước cuộc hẹn 1 ngày',
+        isEnabled: true,
+        icon: 'appointment',
+      ),
+      NotificationSettings(
+        id: '4',
+        title: 'Cập nhật về sự kiện y tế',
+        description: 'Nhận thông tin về khám sàng lọc và chương trình sức khỏe',
+        isEnabled: true,
+        icon: 'medical',
+      ),
+      NotificationSettings(
+        id: '5',
+        title: 'Bản cập nhật bảo hiểm',
+        description: 'Thông báo khi thay đổi quyền lợi bảo hiểm',
+        isEnabled: true,
+        icon: 'insurance',
+      ),
+      NotificationSettings(
+        id: '6',
+        title: 'Nhắc nhở tiêm vắc xin',
+        description: 'Nhận lời nhắc khi lịch tiêm sắp tới',
+        isEnabled: true,
+        icon: 'vaccine',
+      ),
+      NotificationSettings(
+        id: '7',
+        title: 'Thông báo hệ thống',
+        description: 'Nhận cập nhật từ hệ thống SereneHealth',
+        isEnabled: true,
+        icon: 'admin',
+        time: '22:00 - 07:00',
+      ),
+    ];
   }
 
   static Future<void> update(String settingId, Map<String, dynamic> updates) async {

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/patient_model.dart';
 import 'medical_records_screen.dart';
 import 'vaccination_history_screen.dart';
 import 'health_insurance_screen.dart';
 import '../../appointment/views/appointment_history_screen.dart';
 import '../../notification/views/notification_settings_screen.dart';
+import '../../auth/views/welcome_screen.dart';
 import '../../../widgets/fade_page_route.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -85,7 +87,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 10),
                 _buildSettingsTile('❓ Hỗ Trợ', null),
                 const SizedBox(height: 10),
-                _buildSettingsTile('🚪 Đăng xuất', null),
+                _buildSettingsTile('🚪 Đăng xuất', 'logout'),
                 const SizedBox(height: 24),
               ],
             ),
@@ -403,6 +405,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'notification_settings':
         screen = const NotificationSettingsScreen();
         break;
+      case 'logout':
+        _handleLogout();
+        return;
       default:
         return;
     }
@@ -410,5 +415,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context,
       FadePageRoute(builder: (context) => screen),
     );
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          FadePageRoute(builder: (context) => const WelcomeScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi đăng xuất: $e')),
+        );
+      }
+    }
   }
 }
