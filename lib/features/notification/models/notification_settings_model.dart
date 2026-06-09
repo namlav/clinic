@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class NotificationSettings {
   final String id;
   final String title;
@@ -92,5 +94,24 @@ class NotificationSettings {
     if (json['appupdates'] != null) return 'vaccine';
     if (json['quietmode'] != null) return 'admin';
     return 'alert';
+  }
+
+  static Future<List<NotificationSettings>> fetch() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase.from('notificationsettings').select();
+      return (response as List).map((item) => NotificationSettings.fromJson(item)).toList();
+    } catch (e) {
+      throw Exception('Lỗi lấy cài đặt thông báo: $e');
+    }
+  }
+
+  static Future<void> update(String settingId, Map<String, dynamic> updates) async {
+    try {
+      final supabase = Supabase.instance.client;
+      await supabase.from('notificationsettings').update(updates).eq('id', settingId);
+    } catch (e) {
+      throw Exception('Lỗi cập nhật cài đặt thông báo: $e');
+    }
   }
 }

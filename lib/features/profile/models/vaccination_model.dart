@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class VaccinationRecord {
   final String id;
   final String vaccineName;
@@ -47,5 +49,15 @@ class VaccinationRecord {
       'nextduedate': nextDate.isNotEmpty ? nextDate : null,
       'dosetype': description,
     };
+  }
+
+  static Future<List<VaccinationRecord>> fetch() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase.from('vaccinationrecords').select();
+      return (response as List).map((item) => VaccinationRecord.fromJson(item)).toList();
+    } catch (e) {
+      throw Exception('Lỗi lấy lịch sử tiêm chủng: $e');
+    }
   }
 }

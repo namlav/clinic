@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/health_insurance_model.dart';
-import '../../../services/insurance_service.dart';
 
 class HealthInsuranceScreen extends StatefulWidget {
   const HealthInsuranceScreen({super.key});
@@ -37,7 +36,7 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
         ),
       ),
       body: FutureBuilder<HealthInsurance?>(
-        future: InsuranceService.fetchInsurance(),
+        future: HealthInsurance.fetch(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class HealthRecord {
   final String id;
   final String title;
@@ -56,5 +58,15 @@ class HealthRecord {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  static Future<List<HealthRecord>> fetch() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase.from('medicalrecords').select();
+      return (response as List).map((item) => HealthRecord.fromJson(item)).toList();
+    } catch (e) {
+      throw Exception('Lỗi lấy hồ sơ y tế: $e');
+    }
   }
 }

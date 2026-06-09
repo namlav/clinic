@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class Patient {
   final String id;
   final String fullName;
@@ -57,5 +59,16 @@ class Patient {
       'weightkg': weight,
       'height': height,
     };
+  }
+
+  static Future<Patient> fetch() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase.from('users').select('*').limit(1);
+      final data = (response as List).first as Map<String, dynamic>;
+      return Patient.fromJson(data);
+    } catch (e) {
+      throw Exception('Lỗi lấy thông tin bệnh nhân: $e');
+    }
   }
 }

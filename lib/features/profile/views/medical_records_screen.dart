@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/health_record_model.dart';
-import '../../../services/medical_records_service.dart';
 
 class MedicalRecordsScreen extends StatefulWidget {
   const MedicalRecordsScreen({super.key});
@@ -52,7 +51,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
         ),
       ),
       body: FutureBuilder<List<HealthRecord>>(
-        future: MedicalRecordsService.fetchMedicalRecords(),
+        future: HealthRecord.fetch(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

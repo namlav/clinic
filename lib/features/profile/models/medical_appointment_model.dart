@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class MedicalAppointment {
   final String id;
   final String doctorName;
@@ -48,5 +50,15 @@ class MedicalAppointment {
       'status': status,
       'notes': notes,
     };
+  }
+
+  static Future<List<MedicalAppointment>> fetch() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase.from('appointments').select('*, doctors(fullname, avatarurl, specialties(specialtyname))');
+      return (response as List).map((item) => MedicalAppointment.fromJson(item)).toList();
+    } catch (e) {
+      throw Exception('Lỗi lấy lịch sử khám bệnh: $e');
+    }
   }
 }

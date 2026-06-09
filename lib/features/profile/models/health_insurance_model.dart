@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class HealthInsurance {
   final String id;
   final String providerName;
@@ -55,5 +57,15 @@ class HealthInsurance {
       'deductibletotal': copay,
       'status': status,
     };
+  }
+
+  static Future<HealthInsurance?> fetch() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase.from('insurances').select().maybeSingle();
+      return response != null ? HealthInsurance.fromJson(response) : null;
+    } catch (e) {
+      throw Exception('Lỗi lấy bảo hiểm y tế: $e');
+    }
   }
 }

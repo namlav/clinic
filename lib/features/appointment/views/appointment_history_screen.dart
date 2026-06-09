@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../profile/models/medical_appointment_model.dart';
-import '../../../services/appointment_service.dart';
 
 class AppointmentHistoryScreen extends StatefulWidget {
   const AppointmentHistoryScreen({super.key});
@@ -55,7 +54,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
         ],
       ),
       body: FutureBuilder<List<MedicalAppointment>>(
-        future: AppointmentService.fetchAppointmentHistory(),
+        future: MedicalAppointment.fetch(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

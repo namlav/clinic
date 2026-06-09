@@ -6,7 +6,6 @@ import 'health_insurance_screen.dart';
 import '../../appointment/views/appointment_history_screen.dart';
 import '../../notification/views/notification_settings_screen.dart';
 import '../../../widgets/fade_page_route.dart';
-import '../../../services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -43,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: FutureBuilder<Patient>(
-        future: ProfileService.fetchPatient(),
+        future: Patient.fetch(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

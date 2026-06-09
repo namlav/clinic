@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/notification_settings_model.dart';
-import '../../../services/notification_service.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -25,7 +24,7 @@ class _NotificationSettingsScreenState
       toggleStates[id] = newValue;
     });
 
-    NotificationService.updateNotificationSetting(id, {
+    NotificationSettings.update(id, {
       'emailsummary': newValue,
       'smsnotification': newValue,
       'appointmentreminder': newValue,
@@ -58,7 +57,7 @@ class _NotificationSettingsScreenState
         ),
       ),
       body: FutureBuilder<List<NotificationSettings>>(
-        future: NotificationService.fetchNotificationSettings(),
+        future: NotificationSettings.fetch(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

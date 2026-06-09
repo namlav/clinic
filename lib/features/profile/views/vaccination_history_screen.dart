@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/vaccination_model.dart';
-import '../../../services/vaccination_service.dart';
 
 class VaccinationHistoryScreen extends StatefulWidget {
   const VaccinationHistoryScreen({super.key});
@@ -33,7 +32,7 @@ class _VaccinationHistoryScreenState extends State<VaccinationHistoryScreen> {
         ),
       ),
       body: FutureBuilder<List<VaccinationRecord>>(
-        future: VaccinationService.fetchVaccinationHistory(),
+        future: VaccinationRecord.fetch(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
