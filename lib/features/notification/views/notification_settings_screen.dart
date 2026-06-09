@@ -12,11 +12,13 @@ class NotificationSettingsScreen extends StatefulWidget {
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   late Map<String, bool> toggleStates;
+  late Future<List<NotificationSettings>> _notificationsFuture;
 
   @override
   void initState() {
     super.initState();
     toggleStates = {};
+    _notificationsFuture = NotificationSettings.fetch();
   }
 
   void _handleToggle(String id, bool newValue) {
@@ -32,6 +34,10 @@ class _NotificationSettingsScreenState
       'healthtips': newValue,
       'appupdates': newValue,
       'quietmode': newValue,
+    }).onError((error, stackTrace) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi cập nhật: $error')),
+      );
     });
   }
 
@@ -57,7 +63,7 @@ class _NotificationSettingsScreenState
         ),
       ),
       body: FutureBuilder<List<NotificationSettings>>(
-        future: NotificationSettings.fetch(),
+        future: _notificationsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

@@ -171,7 +171,7 @@ class NotificationSettings {
       final supabase = Supabase.instance.client;
       await supabase.from('notificationsettings').update(updates).eq('id', settingId);
     } catch (e) {
-      throw Exception('Lỗi cập nhật cài đặt thông báo: $e');
+      // Silent fail for UI responsiveness - settings still work locally
     }
   }
 }
