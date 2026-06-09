@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import '../../booking/views/booking_success_screen.dart';
+import '../../../main.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
-  const PaymentSuccessScreen({super.key});
+  final String transactionCode;
+  final String totalAmount;
+  final String date;
+  final String time;
+  final String doctorName;
+  final String appointmentId;
+  final String doctorAvatar;
+  final String specialty;
+
+  const PaymentSuccessScreen({
+    super.key,
+    required this.transactionCode,
+    required this.totalAmount,
+    required this.date,
+    required this.time,
+    required this.doctorName,
+    required this.appointmentId,
+    required this.doctorAvatar,
+    required this.specialty,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,18 +69,16 @@ class PaymentSuccessScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 30,
-                        backgroundImage: NetworkImage(
-                          'https://via.placeholder.com/150',
-                        ),
+                        backgroundImage: NetworkImage(doctorAvatar),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
+                          children: [
+                            const Text(
                               'BÁC SĨ PHỤ TRÁCH',
                               style: TextStyle(
                                 color: Colors.blue,
@@ -67,10 +86,10 @@ class PaymentSuccessScreen extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'TS.BS. Đinh Vinh Quang',
-                              style: TextStyle(
+                              doctorName,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -81,7 +100,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _infoRow(Icons.calendar_today, '09:30 AM | 24/10/2026'),
+                  _infoRow(Icons.calendar_today, '$time | $date'),
                 ],
               ),
             ),
@@ -106,7 +125,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _infoRow(Icons.calendar_today, '09:30 AM | 24/10/2026'),
+                  _infoRow(Icons.calendar_today, '$time | $date'),
                   const SizedBox(height: 16),
                   const Text(
                     'MÃ GIAO DỊCH',
@@ -117,9 +136,12 @@ class PaymentSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'SH-20231024-001',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  Text(
+                    transactionCode,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -135,14 +157,14 @@ class PaymentSuccessScreen extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     'Tổng thanh toán',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    '500.000đ',
-                    style: TextStyle(
+                    totalAmount,
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF003D81),
@@ -157,7 +179,13 @@ class PaymentSuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainApp()),
+                    (route) => false,
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF003D81),
                   shape: RoundedRectangleBorder(
@@ -175,7 +203,13 @@ class PaymentSuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainApp()),
+                    (route) => false,
+                  );
+                },
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),

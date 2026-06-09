@@ -1,7 +1,21 @@
 import 'package:flutter/material.dart';
+import '../../../main.dart';
 
 class CancelSuccessScreen extends StatelessWidget {
-  const CancelSuccessScreen({super.key});
+  final int appointmentId;
+  final String doctorName;
+  final String date;
+  final String time;
+  final String specialty;
+
+  const CancelSuccessScreen({
+    super.key,
+    required this.appointmentId,
+    required this.doctorName,
+    required this.date,
+    required this.time,
+    required this.specialty,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -53,24 +67,24 @@ class CancelSuccessScreen extends StatelessWidget {
                 children: [
                   RichText(
                     textAlign: TextAlign.center,
-                    text: const TextSpan(
-                      style: TextStyle(
+                    text: TextSpan(
+                      style: const TextStyle(
                         color: Colors.black,
                         fontSize: 14,
                         height: 1.6,
                       ),
                       children: [
-                        TextSpan(text: 'Lịch hẹn của bạn với '),
+                        const TextSpan(text: 'Lịch hẹn của bạn với '),
                         TextSpan(
-                          text: 'bác sĩ Đinh Vinh Quang',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          text: doctorName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        TextSpan(text: ' vào lúc '),
+                        const TextSpan(text: ' vào lúc '),
                         TextSpan(
-                          text: '09:30 AM ngày 14/04/2026',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          text: '$time ngày $date',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        TextSpan(text: ' đã được hủy.'),
+                        const TextSpan(text: ' đã được hủy.'),
                       ],
                     ),
                   ),
@@ -112,7 +126,13 @@ class CancelSuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainApp()),
+                    (route) => false,
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   shape: RoundedRectangleBorder(
@@ -134,7 +154,13 @@ class CancelSuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainApp()),
+                    (route) => false,
+                  );
+                },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: primaryColor, width: 2),
                   shape: RoundedRectangleBorder(

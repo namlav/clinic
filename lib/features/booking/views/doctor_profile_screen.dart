@@ -1,21 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../payment/views/payment_screen.dart';
 
 class DoctorProfilePage extends StatefulWidget {
   final Map<String, dynamic> doctorData;
 
-  const DoctorProfilePage({
-    super.key,
-    required this.doctorData,
-  });
+  const DoctorProfilePage({super.key, required this.doctorData});
 
   @override
   State<DoctorProfilePage> createState() => _DoctorProfilePageState();
 }
 
 class _DoctorProfilePageState extends State<DoctorProfilePage> {
-  int selectedDay = 17;
-  int selectedTimeIndex = 1;
+  DateTime currentMonth = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
+  DateTime selectedDate = DateTime.now();
+  int selectedTimeIndex = -1; // Đổi thành -1 để bắt buộc người dùng tự chọn giờ
+  bool _isConfirming = false; // Biến trạng thái để khóa nút khi đang xử lý
 
   final List<Map<String, dynamic>> timeSlots = [
     {'time': '09:00', 'disabled': false},
@@ -23,7 +27,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
     {'time': '11:15', 'disabled': false},
     {'time': '01:45', 'disabled': false},
     {'time': '03:00', 'disabled': false},
-    {'time': '04:30', 'disabled': true},
+    {'time': '04:30', 'disabled': false},
     {'time': '05:15', 'disabled': false},
   ];
 
@@ -79,7 +83,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               ),
             ),
 
-            /// BUTTON XÁC NHẬN 
+            /// BUTTON XÁC NHẬN
             _buildConfirmButton(),
           ],
         ),
@@ -110,11 +114,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               letterSpacing: -0.2,
             ),
           ),
-          const Icon(
-            Icons.search,
-            size: 23,
-            color: Color(0xFF0057C2),
-          ),
+          const Icon(Icons.search, size: 23, color: Color(0xFF0057C2)),
         ],
       ),
     );
@@ -126,7 +126,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
     final String rating = (widget.doctorData['rating'] ?? 5.0).toString();
     final int reviewCount = widget.doctorData['reviewcount'] ?? 0;
     final int experienceYears = widget.doctorData['experienceyears'] ?? 5;
-    final String avatarUrl = widget.doctorData['avatarurl'] ?? "assets/images/ava1.jpg";
+    final String avatarUrl =
+        widget.doctorData['avatarurl'] ?? "assets/images/ava1.jpg";
 
     return Container(
       width: double.infinity,
@@ -156,12 +157,13 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                         width: 120,
                         height: 120,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Image.asset(
-                          "assets/images/ava1.jpg",
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset(
+                              "assets/images/ava1.jpg",
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            ),
                       )
                     : Image.asset(
                         "assets/images/ava1.jpg",
@@ -179,10 +181,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF0057C2),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 3,
-                    ),
+                    border: Border.all(color: Colors.white, width: 3),
                   ),
                   child: const Icon(
                     Icons.verified,
@@ -238,18 +237,17 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFDDEEFF),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.star,
-                      size: 15,
-                      color: Color(0xFF0057C2),
-                    ),
+                    const Icon(Icons.star, size: 15, color: Color(0xFF0057C2)),
                     const SizedBox(width: 4),
                     Text(
                       "$rating ($reviewCount đánh giá)",
@@ -280,7 +278,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   }
 
   Widget _buildInfoSection() {
-    final String bio = widget.doctorData['bio'] ?? 
+    final String bio =
+        widget.doctorData['bio'] ??
         "Thông tin chi tiết về thực hành lâm sàng và lộ trình chẩn đoán điều trị y tế toàn diện của bác sĩ đang được cập nhật...";
 
     return Column(
@@ -323,6 +322,16 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   }
 
   Widget _buildCalendarSection() {
+    final int daysInMonth = DateUtils.getDaysInMonth(
+      currentMonth.year,
+      currentMonth.month,
+    );
+    final int firstWeekday = DateTime(
+      currentMonth.year,
+      currentMonth.month,
+      1,
+    ).weekday;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -354,24 +363,54 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Tháng 12/2026",
-                    style: TextStyle(
+                  Text(
+                    "Tháng ${currentMonth.month}/${currentMonth.year}",
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1F36),
                     ),
                   ),
                   Row(
-                    children: const [
-                      Icon(
-                        Icons.chevron_left,
-                        color: Color(0xFFB0B8C5),
+                    children: [
+                      GestureDetector(
+                        onTap:
+                            (currentMonth.year == DateTime.now().year &&
+                                currentMonth.month == DateTime.now().month)
+                            ? null
+                            : () {
+                                setState(() {
+                                  currentMonth = DateTime(
+                                    currentMonth.year,
+                                    currentMonth.month - 1,
+                                    1,
+                                  );
+                                });
+                              },
+                        child: Icon(
+                          Icons.chevron_left,
+                          color:
+                              (currentMonth.year == DateTime.now().year &&
+                                  currentMonth.month == DateTime.now().month)
+                              ? Colors.grey[300]
+                              : const Color(0xFFB0B8C5),
+                        ),
                       ),
-                      SizedBox(width: 4),
-                      Icon(
-                        Icons.chevron_right,
-                        color: Color(0xFFB0B8C5),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            currentMonth = DateTime(
+                              currentMonth.year,
+                              currentMonth.month + 1,
+                              1,
+                            );
+                          });
+                        },
+                        child: const Icon(
+                          Icons.chevron_right,
+                          color: Color(0xFFB0B8C5),
+                        ),
                       ),
                     ],
                   ),
@@ -401,42 +440,73 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               const SizedBox(height: 16),
 
               /// DAYS
-              Wrap(
-                spacing: 10,
-                runSpacing: 12,
-                children: List.generate(
-                  17,
-                  (index) {
-                    int day = index + 8;
-                    bool isSelected = day == selectedDay;
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                ),
+                itemCount: daysInMonth + firstWeekday - 1,
+                itemBuilder: (context, index) {
+                  if (index < firstWeekday - 1) {
+                    return const SizedBox.shrink();
+                  }
+                  int day = index - (firstWeekday - 1) + 1;
 
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedDay = day;
-                        });
-                      },
-                      child: Container(
-                        width: 36,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF0057C2) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "$day",
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected ? Colors.white : const Color(0xFF1A1F36),
-                            ),
+                  DateTime currentDay = DateTime(
+                    currentMonth.year,
+                    currentMonth.month,
+                    day,
+                  );
+                  DateTime today = DateTime(
+                    DateTime.now().year,
+                    DateTime.now().month,
+                    DateTime.now().day,
+                  );
+                  bool isPastDay = currentDay.isBefore(today);
+
+                  bool isSelected =
+                      selectedDate.year == currentMonth.year &&
+                      selectedDate.month == currentMonth.month &&
+                      selectedDate.day == day;
+
+                  return GestureDetector(
+                    onTap: isPastDay
+                        ? null
+                        : () {
+                            setState(() {
+                              selectedDate = currentDay;
+                              selectedTimeIndex = -1; // Reset giờ khi đổi ngày
+                            });
+                          },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF0057C2)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          "$day",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isPastDay
+                                ? Colors.grey[400]
+                                : isSelected
+                                ? Colors.white
+                                : const Color(0xFF1A1F36),
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -470,6 +540,30 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           ),
           itemBuilder: (context, index) {
             bool disabled = timeSlots[index]['disabled'];
+
+            // Vô hiệu hóa các khung giờ trong ngày hôm nay đã trôi qua
+            DateTime now = DateTime.now();
+            if (selectedDate.year == now.year &&
+                selectedDate.month == now.month &&
+                selectedDate.day == now.day) {
+              final timeStr = timeSlots[index]['time'];
+              final parts = timeStr.split(':');
+              int hour = int.parse(parts[0]);
+              int minute = int.parse(parts[1]);
+              if (hour < 8) hour += 12;
+
+              DateTime slotTime = DateTime(
+                selectedDate.year,
+                selectedDate.month,
+                selectedDate.day,
+                hour,
+                minute,
+              );
+              if (slotTime.isBefore(now)) {
+                disabled = true;
+              }
+            }
+
             bool isSelected = selectedTimeIndex == index;
 
             return GestureDetector(
@@ -485,8 +579,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   color: disabled
                       ? const Color(0xFFF0F2F5)
                       : isSelected
-                          ? const Color(0xFF0057C2)
-                          : Colors.white,
+                      ? const Color(0xFF0057C2)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: disabled || isSelected
                       ? []
@@ -507,8 +601,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                       color: disabled
                           ? const Color(0xFFCDD5DF)
                           : isSelected
-                              ? Colors.white
-                              : const Color(0xFF1A1F36),
+                          ? Colors.white
+                          : const Color(0xFF1A1F36),
                     ),
                   ),
                 ),
@@ -527,64 +621,137 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
         width: double.infinity,
         height: 62,
         child: ElevatedButton(
-          onPressed: () async {
-            final String selectedTime = timeSlots[selectedTimeIndex]['time'];
-            final String appointmentDate = "2026-12-$selectedDay";
-            
-            final int doctorId = widget.doctorData['doctorid'] ?? 0;
+          onPressed: (selectedTimeIndex == -1 || _isConfirming)
+              ? null
+              : () async {
+                  setState(() {
+                    _isConfirming = true;
+                  });
+                  final String selectedTime =
+                      timeSlots[selectedTimeIndex]['time'];
+                  final String appointmentDate =
+                      "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
 
-            try {
-              await Supabase.instance.client.from('appointments').insert({
-                'doctorid': doctorId,
-                'appointmentdate': appointmentDate,
-                'starttime': "$selectedTime:00", 
-                'endtime': "$selectedTime:00",
-                'status': 'Pending',           
-                'createdat': DateTime.now().toIso8601String(),
-              });
+                  final int doctorId = widget.doctorData['doctorid'] ?? 0;
+                  try {
+                    // 1. Lấy AuthId (UUID) của phiên đăng nhập hiện tại từ hệ thống Auth
+                    final currentUser =
+                        Supabase.instance.client.auth.currentUser;
+                    if (currentUser == null) {
+                      throw Exception("Vui lòng đăng nhập lại để tiếp tục!");
+                    }
+                    final String authId = currentUser.id;
 
-              // 4. Thông báo và tự động Pop điều hướng quay lại
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đặt lịch hẹn khám thành công!")),
-                );
-                Navigator.pop(context);
-              }
-            } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Lỗi hệ thống: Không thể đặt lịch lịch hẹn ($e)")),
-                );
-              }
-            }
-          },
+                    // 2. Truy vấn vào bảng users để lấy ra UserId (số nguyên) tương ứng
+
+                    final userData = await Supabase.instance.client
+                        .from('users')
+                        .select('userid')
+                        .eq('authid', authId)
+                        .single();
+
+                    final int userId = userData['userid'];
+
+                    // 3. Thực hiện lệnh Insert kèm theo đúng trường userid
+                    final newAppointment = await Supabase.instance.client
+                        .from('appointments')
+                        .insert({
+                          'userid':
+                              userId, // 👉 Dòng quan trọng nhất để vượt qua RLS
+                          'doctorid': doctorId,
+                          'appointmentdate': appointmentDate,
+                          'starttime': "$selectedTime:00",
+                          'endtime': "$selectedTime:00",
+                          'status': 'Pending',
+                          'createdat': DateTime.now().toIso8601String(),
+                        })
+                        .select()
+                        .single();
+
+                    final int newAppointmentId =
+                        newAppointment['appointmentid'];
+
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PaymentScreen(
+                            appointmentId: newAppointmentId,
+                            doctorId: doctorId,
+                            bookingDate: appointmentDate,
+                            bookingTime: selectedTime,
+                          ),
+                        ),
+                      ).then((_) {
+                        // Mở khóa nút lại nếu người dùng bấm "Back" từ trang thanh toán
+                        if (mounted) {
+                          setState(() => _isConfirming = false);
+                        }
+                      });
+                    }
+                  } on PostgrestException catch (e) {
+                    if (mounted) {
+                      // Bắt lỗi 23505: Trùng lịch từ Supabase
+                      if (e.code == '23505' ||
+                          e.message.contains('unique_appointment_slot') ||
+                          e.message.contains('duplicate key')) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "Rất tiếc, khung giờ này vừa có người nhanh tay đặt trước. Vui lòng chọn giờ khác!",
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Lỗi CSDL: ${e.message}")),
+                        );
+                      }
+                      setState(() => _isConfirming = false);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Lỗi hệ thống: $e")),
+                      );
+                      setState(() => _isConfirming = false);
+                    }
+                  }
+                },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0057C2),
-            elevation: 8,
-            shadowColor: const Color(0x330057C2),
+            backgroundColor: selectedTimeIndex == -1
+                ? Colors.grey[400]
+                : const Color(0xFF0057C2),
+            elevation: selectedTimeIndex == -1 ? 0 : 8,
+            shadowColor: selectedTimeIndex == -1
+                ? Colors.transparent
+                : const Color(0x330057C2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
           ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Xác nhận cuộc hẹn",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+          child: _isConfirming
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Xác nhận cuộc hẹn",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Icon(
+                      Icons.calendar_month_outlined,
+                      size: 22,
+                      color: Colors.white,
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(width: 12),
-              Icon(
-                Icons.calendar_month_outlined,
-                size: 22,
-                color: Colors.white,
-              ),
-            ],
-          ),
         ),
       ),
     );

@@ -62,10 +62,8 @@ class _MainAppState extends State<MainApp> {
         duration: const Duration(milliseconds: 150),
         switchInCurve: Curves.easeIn,
         switchOutCurve: Curves.easeOut,
-        transitionBuilder: (child, animation) => FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
         child: KeyedSubtree(
           key: ValueKey(_currentIndex),
           child: _buildPage(_currentIndex),
@@ -87,6 +85,7 @@ class _MainAppState extends State<MainApp> {
       case 0:
         return HomeScreen(
           onSearchTap: () => setState(() => _currentIndex = 1),
+          onScheduleTap: () => setState(() => _currentIndex = 2),
         );
       case 1:
         return const SearchScreen();

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'cancel_appointment_screen.dart';
 
 class ScheduleListScreen extends StatefulWidget {
   const ScheduleListScreen({super.key});
@@ -8,6 +10,113 @@ class ScheduleListScreen extends StatefulWidget {
 }
 
 class _ScheduleListScreenState extends State<ScheduleListScreen> {
+  final supabase = Supabase.instance.client;
+  List<Map<String, dynamic>> upcomingAppointments = [];
+  List<Map<String, dynamic>> completedAppointments = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppointments();
+  }
+
+  Future<void> _loadAppointments() async {
+    setState(() => isLoading = true);
+    try {
+      final user = supabase.auth.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Vui lòng đăng nhập!')));
+        setState(() => isLoading = false);
+        return;
+      }
+
+      print('Loading appointments for user: ${user.id}');
+
+      // Get numeric userid from users table using authid
+      final userResponse = await supabase
+          .from('users')
+          .select('userid')
+          .eq('authid', user.id)
+          .single();
+
+      final numericUserId = userResponse['userid'] as int;
+      print('Numeric userid: $numericUserId');
+
+      final response = await supabase
+          .from('appointments')
+          .select('*, doctors(fullname, avatarurl, specialties(specialtyname))')
+          .eq('userid', numericUserId);
+
+      print('Appointments response: $response');
+      print('Response count: ${response.length}');
+
+      final upcoming = <Map<String, dynamic>>[];
+      final completed = <Map<String, dynamic>>[];
+      final now = DateTime.now();
+
+      for (var appointment in response) {
+        print('Appointment: $appointment');
+
+        if (appointment['status'] == 'Cancelled') {
+          // Skip cancelled appointments
+          continue;
+        }
+
+        bool isCompleted = false;
+
+        // Nếu trạng thái database đã là hoàn thành
+        if (appointment['status'] != 'Upcoming' &&
+            appointment['status'] != 'Pending') {
+          isCompleted = true;
+        } else {
+          // Tự động kiểm tra thời gian thực tế
+          try {
+            final dateStr = appointment['appointmentdate'];
+            final endTimeStr =
+                appointment['endtime'] ?? appointment['starttime'];
+
+            if (dateStr != null && endTimeStr != null) {
+              final appointmentEndTime = DateTime.parse('$dateStr $endTimeStr');
+              if (now.isAfter(appointmentEndTime)) {
+                isCompleted = true;
+              }
+            }
+          } catch (e) {
+            print('Lỗi parse ngày giờ: $e');
+          }
+        }
+
+        if (isCompleted) {
+          completed.add(appointment);
+        } else {
+          upcoming.add(appointment);
+        }
+      }
+
+      print(
+        'Upcoming count: ${upcoming.length}, Completed count: ${completed.length}',
+      );
+
+      setState(() {
+        upcomingAppointments = upcoming;
+        completedAppointments = completed;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading appointments: $e');
+      print('Error type: ${e.runtimeType}');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi tải lịch: $e')));
+      }
+      setState(() => isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -15,6 +124,12 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Lịch Trình'),
+          actions: [
+            IconButton(
+              onPressed: _loadAppointments,
+              icon: const Icon(Icons.refresh),
+            ),
+          ],
           bottom: const TabBar(
             indicatorColor: Colors.white,
             tabs: [
@@ -29,51 +144,102 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> {
   }
 
   Widget _buildUpcomingTab() {
-    return ListView(
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (upcomingAppointments.isEmpty) {
+      return Center(
+        child: Text(
+          'Không có lịch hẹn sắp tới',
+          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+        ),
+      );
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      children: [
-        _buildAppointmentCard(
-          doctorName: 'Nguyễn Trí Thức',
-          specialty: 'KHOA TIM MẠCH',
-          date: '12/11/2023',
-          time: '10:00 AM',
-          location: 'Phòng Khám A',
-          imageUrl: 'https://via.placeholder.com/150',
-          status: 'Sắp tới',
-        ),
-        const SizedBox(height: 12),
-        _buildAppointmentCard(
-          doctorName: 'Đinh Vinh Quang',
-          specialty: 'KHOA NỘI TỔNG QUÁT',
-          date: '24/12/2023',
-          time: '02:30 PM',
-          location: 'Phòng Khám A',
-          imageUrl: 'https://via.placeholder.com/150',
-          status: 'Sắp tới',
-        ),
-      ],
+      itemCount: upcomingAppointments.length,
+      itemBuilder: (context, index) {
+        final appointment = upcomingAppointments[index];
+        final doctor = appointment['doctors'] as Map<String, dynamic>?;
+        final doctorName = doctor?['fullname'] ?? 'Bác sĩ';
+        final avatarUrl =
+            doctor?['avatarurl'] ?? 'https://via.placeholder.com/150';
+        final specialty =
+            doctor?['specialties']?['specialtyname'] ?? 'Chuyên khoa';
+
+        return Column(
+          children: [
+            _buildAppointmentCard(
+              appointmentId: appointment['appointmentid'],
+              doctorName: doctorName,
+              specialty: specialty,
+              date: appointment['appointmentdate'] ?? '',
+              time:
+                  '${appointment['starttime']?.toString().split('.').first ?? ''}',
+              location: appointment['roomname'] ?? 'Phòng Khám',
+              imageUrl: avatarUrl,
+              status: 'Sắp tới',
+            ),
+            if (index < upcomingAppointments.length - 1)
+              const SizedBox(height: 12),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildCompletedTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _buildAppointmentCard(
-          doctorName: 'Trần Thị Hương',
-          specialty: 'CHUYÊN KHOA NGOÀI DA',
-          date: '10/10/2023',
-          time: '09:00 AM',
-          location: 'Phòng Khám B',
-          imageUrl: 'https://via.placeholder.com/150',
-          status: 'Hoàn thành',
-          isCompleted: true,
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (completedAppointments.isEmpty) {
+      return Center(
+        child: Text(
+          'Không có lịch hẹn hoàn thành',
+          style: TextStyle(color: Colors.grey[600], fontSize: 16),
         ),
-      ],
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: completedAppointments.length,
+      itemBuilder: (context, index) {
+        final appointment = completedAppointments[index];
+        final doctor = appointment['doctors'] as Map<String, dynamic>?;
+        final doctorName = doctor?['fullname'] ?? 'Bác sĩ';
+        final avatarUrl =
+            doctor?['avatarurl'] ?? 'https://via.placeholder.com/150';
+        final specialty =
+            doctor?['specialties']?['specialtyname'] ?? 'Chuyên khoa';
+
+        return Column(
+          children: [
+            _buildAppointmentCard(
+              appointmentId: appointment['appointmentid'],
+              doctorName: doctorName,
+              specialty: specialty,
+              date: appointment['appointmentdate'] ?? '',
+              time:
+                  '${appointment['starttime']?.toString().split('.').first ?? ''}',
+              location: appointment['roomname'] ?? 'Phòng Khám',
+              imageUrl: avatarUrl,
+              status: 'Hoàn thành',
+              isCompleted: true,
+            ),
+            if (index < completedAppointments.length - 1)
+              const SizedBox(height: 12),
+          ],
+        );
+      },
     );
   }
 
   Widget _buildAppointmentCard({
+    required int appointmentId,
     required String doctorName,
     required String specialty,
     required String date,
@@ -198,7 +364,16 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CancelAppointmentScreen(
+                            appointmentId: appointmentId,
+                          ),
+                        ),
+                      ).then((_) => _loadAppointments());
+                    },
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(20),

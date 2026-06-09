@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'search_screen.dart';
 import '../../../widgets/fade_page_route.dart';
+import '../../appointment/views/schedule_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onSearchTap;
+  final VoidCallback? onScheduleTap;
 
-  const HomeScreen({super.key, this.onSearchTap});
+  const HomeScreen({super.key, this.onSearchTap, this.onScheduleTap});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -28,13 +30,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<Map<String, dynamic>?> _fetchPriorityAppointment() async {
     try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return null;
+
+      final userResponse = await Supabase.instance.client
+          .from('users')
+          .select('userid')
+          .eq('authid', user.id)
+          .single();
+      final numericUserId = userResponse['userid'] as int;
+
+      final today = DateTime.now().toIso8601String().split('T')[0];
+
       final response = await Supabase.instance.client
           .from('appointments')
           .select(
             'appointmentid, appointmentdate, starttime, endtime, doctors(fullname, title, avatarurl)',
           )
+          .eq('userid', numericUserId)
           .neq('status', 'Cancelled')
+          .gte('appointmentdate', today)
           .order('appointmentdate', ascending: true)
+          .order('starttime', ascending: true)
           .limit(1)
           .maybeSingle();
       return response as Map<String, dynamic>?;
@@ -461,9 +478,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         /// BUTTON
                         GestureDetector(
                           onTap: () {
-                            print(
-                              "Xác nhận tham gia lịch hẹn ID: ${appointment['appointmentid']}",
-                            );
+                            if (widget.onScheduleTap != null) {
+                              widget.onScheduleTap!();
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ScheduleListScreen(),
+                                ),
+                              );
+                            }
                           },
                           child: Container(
                             width: double.infinity,
@@ -597,12 +622,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
       /// FLOAT BUTTON
-      floatingActionButton: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: const BoxDecoration(
-          color: Color(0xFF2F6CD3),
-          shape: BoxShape.circle,
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          if (widget.onSearchTap != null) {
+            widget.onSearchTap!();
+          } else {
+            Navigator.push(
+              context,
+              FadePageRoute(builder: (context) => const SearchScreen()),
+            );
+          }
+        },
+        backgroundColor: const Color(0xFF2F6CD3),
+        shape: const CircleBorder(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

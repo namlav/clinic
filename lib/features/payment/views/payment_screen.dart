@@ -1,8 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'payment_success_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
-  const PaymentScreen({super.key});
+  final int doctorId;
+  final String bookingDate;
+  final String bookingTime;
+  final int appointmentId;
+
+  const PaymentScreen({
+    super.key,
+    required this.doctorId,
+    required this.bookingDate,
+    required this.bookingTime,
+    required this.appointmentId,
+  });
 
   @override
   State<PaymentScreen> createState() => _PaymentScreenState();
@@ -10,17 +23,249 @@ class PaymentScreen extends StatefulWidget {
 
 class _PaymentScreenState extends State<PaymentScreen> {
   String selectedMethod = 'MoMo';
+  final supabase = Supabase.instance.client;
+  bool _isLoading = false;
+  Map<String, dynamic>? doctorData;
+  Timer? _timer;
+  int _remainingSeconds = 300; // 5 phút
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDoctorInfo();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        _timer?.cancel();
+        _handleTimeout();
+      }
+    });
+  }
+
+  String get _formattedTime {
+    int minutes = _remainingSeconds ~/ 60;
+    int seconds = _remainingSeconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _handleTimeout() async {
+    if (_isLoading) return; // Không hủy nếu đang xử lý thanh toán dở dang
+    setState(() => _isLoading = true);
+    try {
+      await supabase
+          .from('appointments')
+          .update({'status': 'Cancelled'})
+          .eq('appointmentid', widget.appointmentId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Thời gian giữ chỗ đã hết. Lịch hẹn của bạn đã bị hủy tự động.',
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      print('Lỗi khi hủy do hết giờ: $e');
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  Future<void> _fetchDoctorInfo() async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await supabase
+          .from('doctors')
+          .select('*, specialties(specialtyname)')
+          .eq('doctorid', widget.doctorId)
+          .single();
+
+      setState(() {
+        doctorData = response;
+      });
+    } catch (e) {
+      print("Error: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handlePayment() async {
+    if (doctorData == null) return;
+
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng đăng nhập để thực hiện thanh toán!'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      // Get numeric userid from users table using authid
+      final userResponse = await supabase
+          .from('users')
+          .select('userid')
+          .eq('authid', user.id)
+          .single();
+
+      final numericUserId = userResponse['userid'] as int;
+
+      final randomInvoice =
+          'SH-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+      final double consultationFee =
+          double.tryParse(doctorData!['consultationfee'].toString()) ?? 500000;
+
+      // Parse starttime: "09:30 AM" -> "09:30:00"
+      String startTime = _parseTimeToHHMMSS(widget.bookingTime);
+      // Calculate endtime: add 1 hour to starttime
+      String endTime = _addHourToTime(startTime);
+
+      // Cập nhật trạng thái lịch hẹn đã tạo ở màn hình trước
+      await supabase
+          .from('appointments')
+          .update({'status': 'Confirmed'})
+          .eq('appointmentid', widget.appointmentId);
+
+      // Insert payment — appointmentid để RLS tự verify qua join appointments
+      await supabase.from('payments').insert({
+        'appointmentid': widget.appointmentId,
+        'transactioncode': randomInvoice,
+        'baseamount': consultationFee,
+        'discountamount': 0,
+        'totalamount': consultationFee,
+        'paymentmethod': selectedMethod,
+        'paymentdate': DateTime.now().toIso8601String(),
+        'status': 'Success',
+      });
+
+      _timer?.cancel(); // Ngắt bộ đếm khi thanh toán thành công
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentSuccessScreen(
+              transactionCode: randomInvoice,
+              totalAmount: '${consultationFee.toStringAsFixed(0)}đ',
+              date: widget.bookingDate,
+              time: widget.bookingTime,
+              doctorName: doctorData!['fullname'] ?? 'Bác sĩ',
+              appointmentId: widget.appointmentId.toString(),
+              doctorAvatar:
+                  doctorData!['avatarurl'] ?? 'https://via.placeholder.com/150',
+              specialty:
+                  doctorData?['specialties']?['specialtyname'] ?? 'Chuyên khoa',
+            ),
+          ),
+        );
+      }
+    } on PostgrestException catch (e) {
+      print("Postgrest Error: ${e.message}");
+      if (mounted) {
+        // Bắt lỗi 23505: Unique constraint violation (Trùng lịch)
+        if (e.code == '23505' ||
+            e.message.contains('unique_appointment_slot') ||
+            e.message.contains('duplicate key')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Rất tiếc, khung giờ này vừa có người nhanh tay đặt trước. Vui lòng chọn giờ khác!',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lỗi CSDL: ${e.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print("Error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã xảy ra lỗi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _cancelAndPop() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      // Huỷ lịch hẹn nếu người dùng thoát mà chưa thanh toán
+      await supabase
+          .from('appointments')
+          .update({'status': 'Cancelled'})
+          .eq('appointmentid', widget.appointmentId);
+    } catch (e) {
+      print('Lỗi khi huỷ lịch hẹn do thoát: $e');
+    }
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF003D81)),
-          onPressed: () => Navigator.pop(context),
-        ),
+    if (_isLoading && doctorData == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final String doctorName = doctorData?['fullname'] ?? 'Chưa rõ bác sĩ';
+    final String specialtyName =
+        doctorData?['specialties']?['specialtyname'] ?? 'Nội tổng quát';
+    final double fee =
+        double.tryParse(
+          doctorData?['consultationfee'].toString() ?? '500000',
+        ) ??
+        500000;
+
+    // Wrap Scaffold with WillPopScope to catch Android back button
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async {
+        await _cancelAndPop();
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF003D81)),
+            onPressed: _cancelAndPop,
+          ),
         title: const Text(
           'Thanh toán',
           style: TextStyle(
@@ -35,7 +280,31 @@ class _PaymentScreenState extends State<PaymentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Doctor Info Card
+            // Thanh hiển thị thời gian đếm ngược
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red[200]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.timer_outlined, color: Colors.red, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Thời gian giữ chỗ còn lại: $_formattedTime',
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -48,22 +317,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Cuộc hẹn với tính',
+                    'Cuộc hẹn với',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'TS.BS. Đinh Vinh Quang',
-                    style: TextStyle(
+                  Text(
+                    doctorName,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'Khoa tim mạch',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                  Text(
+                    specialtyName,
+                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -74,9 +343,12 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         size: 16,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        '24/10/2026',
-                        style: TextStyle(color: Colors.white, fontSize: 13),
+                      Text(
+                        widget.bookingDate,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       const Icon(
@@ -85,23 +357,26 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         size: 16,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        '09:30 AM',
-                        style: TextStyle(color: Colors.white, fontSize: 13),
+                      Text(
+                        widget.bookingTime,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'PHÍ DỊCH VỤ',
                         style: TextStyle(color: Colors.white70, fontSize: 12),
                       ),
                       Text(
-                        '500.000đ',
-                        style: TextStyle(
+                        '${fee.toStringAsFixed(0)}đ',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -118,76 +393,32 @@ class _PaymentScreenState extends State<PaymentScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            _buildPaymentMethod('Ví MoMo', 'MoMo', 'images/momo_logo.png'),
+            _buildPaymentMethod(
+              'Ví MoMo',
+              'MoMo',
+              'assets/images/momo_logo.png',
+            ),
             _buildPaymentMethod(
               'Thẻ ATM / Napas',
               'ATM',
-              'images/logo_atm.png',
+              'assets/images/logo_atm.png',
             ),
             _buildPaymentMethod(
               'ZaloPay',
               'ZaloPay',
-              'images/zalopay_logo.png',
+              'assets/images/zalopay_logo.png',
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        'Gía khách hàng',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '550.000đ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: const [
-                      Text(
-                        'Ưu đãi',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        '-50.000đ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text(
+              children: [
+                const Text(
                   'Tổng thanh toán',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '500.000đ',
-                  style: TextStyle(
+                  '${fee.toStringAsFixed(0)}đ',
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF003D81),
@@ -200,39 +431,25 @@ class _PaymentScreenState extends State<PaymentScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PaymentSuccessScreen(),
-                    ),
-                  );
-                },
+                onPressed: _isLoading ? null : _handlePayment,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF003D81),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                child: const Text(
-                  'Thanh toán ngay',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Thanh toán ngay',
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
               ),
             ),
-            const SizedBox(height: 12),
-            Center(
-              child: Text(
-                'Bằng việc nhấn "Thanh toán ngay", bạn đồng ý với Điều khoản sử dụng và Chính sách bảo mật của SereneHealth.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-              ),
-            ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildPaymentMethod(String title, String value, String imagePath) {
@@ -250,18 +467,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
         title: Row(
           children: [
-            Image.asset(
-              imagePath,
-              width: 40,
-              height: 40,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(
-                  Icons.image_not_supported,
-                  size: 40,
-                  color: Colors.grey,
-                );
-              },
-            ),
+            imagePath.startsWith('http')
+                ? Image.network(
+                    imagePath,
+                    width: 30,
+                    height: 30,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.payment, size: 30, color: Colors.blue),
+                  )
+                : Image.asset(
+                    imagePath,
+                    width: 30,
+                    height: 30,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Icon(Icons.payment, size: 30, color: Colors.blue),
+                  ),
             const SizedBox(width: 16),
             Text(
               title,
@@ -274,5 +496,52 @@ class _PaymentScreenState extends State<PaymentScreen> {
         onChanged: (val) => setState(() => selectedMethod = val.toString()),
       ),
     );
+  }
+
+  /// Parses time from "HH:MM AM/PM" format to "HH:MM:SS" (24-hour format)
+  String _parseTimeToHHMMSS(String timeString) {
+    try {
+      timeString = timeString.trim();
+      final parts = timeString.split(':');
+
+      if (parts.isEmpty) return '09:00:00';
+
+      int hour = int.tryParse(parts[0]) ?? 9;
+      int minute = 0;
+
+      if (parts.length > 1) {
+        final minuteAndPeriod = parts[1].split(' ');
+        minute = int.tryParse(minuteAndPeriod[0]) ?? 0;
+
+        // Handle AM/PM
+        if (timeString.contains('PM') && hour != 12) {
+          hour += 12;
+        } else if (timeString.contains('AM') && hour == 12) {
+          hour = 0;
+        }
+      }
+
+      return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}:00';
+    } catch (e) {
+      print('Error parsing time: $e');
+      return '09:00:00';
+    }
+  }
+
+  /// Adds 1 hour to a time string in "HH:MM:SS" format
+  String _addHourToTime(String timeString) {
+    try {
+      final parts = timeString.split(':');
+      int hour = int.tryParse(parts[0]) ?? 9;
+      int minute = int.tryParse(parts[1]) ?? 0;
+
+      hour += 1;
+      if (hour >= 24) hour = 0;
+
+      return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}:00';
+    } catch (e) {
+      print('Error adding hour: $e');
+      return '10:00:00';
+    }
   }
 }
