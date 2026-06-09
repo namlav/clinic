@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'search_screen.dart';
 import '../../../widgets/fade_page_route.dart';
+import 'package:clinic/features/appointment/views/schedule_list_screen.dart';
+import 'package:clinic/features/booking/views/booking_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onSearchTap;
@@ -16,16 +18,38 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
 
+  late Future<Map<String, dynamic>?> _userProfileFuture;
   late Future<Map<String, dynamic>?> _priorityAppointmentFuture;
   late Future<List<Map<String, dynamic>>> _specialtiesFuture;
 
   @override
   void initState() {
     super.initState();
+    _userProfileFuture = _fetchUserProfile();
     _priorityAppointmentFuture = _fetchPriorityAppointment();
     _specialtiesFuture = _fetchSpecialties();
   }
 
+  //Lấy thông tin cá nhân của User hiện tại từ Supabase
+  Future<Map<String, dynamic>?> _fetchUserProfile() async {
+    try {
+      final authUser = Supabase.instance.client.auth.currentUser;
+
+      if (authUser == null) return null;
+
+      final response = await Supabase.instance.client
+          .from('users')
+          .select('fullname, avatarurl')
+          .eq('authid', authUser.id)
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  //  Lấy cuộc hẹn ưu tiên sắp diễn ra
   Future<Map<String, dynamic>?> _fetchPriorityAppointment() async {
     try {
       final response = await Supabase.instance.client
@@ -43,6 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // Lấy danh sách chuyên khoa
   Future<List<Map<String, dynamic>>> _fetchSpecialties() async {
     try {
       final response = await Supabase.instance.client
@@ -95,86 +120,105 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const SizedBox(height: 12),
 
-              /// HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Row(
+              FutureBuilder<Map<String, dynamic>?>(
+                future: _userProfileFuture,
+                builder: (context, userSnapshot) {
+                  final userData = userSnapshot.data;
+                  final String userAvatar = userData?['avatarurl'] ?? "";
+                  final String userFullname = userData?['fullname'] ?? "User";
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// AVATAR
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          image: DecorationImage(
-                            image: AssetImage("assets/images/ava1.jpg"),
-                            fit: BoxFit.cover,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Row(
+                            children: [
+                              /// AVATAR USER DYNAMIC
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  image: DecorationImage(
+                                    image: userAvatar.startsWith('http')
+                                        ? NetworkImage(userAvatar)
+                                              as ImageProvider
+                                        : const AssetImage(
+                                            "assets/images/ava1.jpg",
+                                          ),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              /// LOGO TEXT
+                              const Text(
+                                "SereneHealth",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0057C2),
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                            ],
                           ),
+
+                          /// SEARCH
+                          IconButton(
+                            onPressed: () {
+                              if (widget.onSearchTap != null) {
+                                widget.onSearchTap!();
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  FadePageRoute(
+                                    builder: (context) => const SearchScreen(),
+                                  ),
+                                );
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.search,
+                              color: Color(0xFF0057C2),
+                              size: 24,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      /// WELCOME SECTION
+                      const Text(
+                        "Chào mừng,",
+                        style: TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.w800,
+                          height: 1.1,
+                          letterSpacing: -1,
+                          color: Colors.black,
                         ),
                       ),
-                      const SizedBox(width: 12),
-
-                      /// LOGO TEXT
-                      const Text(
-                        "SereneHealth",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
+                      const SizedBox(height: 2),
+                      Text(
+                        userFullname,
+                        style: const TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.w800,
+                          height: 1.1,
+                          letterSpacing: -1,
                           color: Color(0xFF0057C2),
-                          letterSpacing: -0.3,
                         ),
                       ),
                     ],
-                  ),
+                  );
+                },
+              ),
 
-                  /// SEARCH
-                  IconButton(
-                    onPressed: () {
-                      if (widget.onSearchTap != null) {
-                        widget.onSearchTap!();
-                      } else {
-                        Navigator.push(
-                          context,
-                          FadePageRoute(
-                            builder: (context) => const SearchScreen(),
-                          ),
-                        );
-                      }
-                    },
-                    icon: const Icon(
-                      Icons.search,
-                      color: Color(0xFF0057C2),
-                      size: 24,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              /// WELCOME
-              const Text(
-                "Chào mừng,",
-                style: TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.w800,
-                  height: 1.1,
-                  letterSpacing: -1,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 2),
-              const Text(
-                "Alexander",
-                style: TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.w800,
-                  height: 1.1,
-                  letterSpacing: -1,
-                  color: Color(0xFF0057C2),
-                ),
-              ),
               const SizedBox(height: 14),
 
               SizedBox(
@@ -206,15 +250,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       letterSpacing: -0.3,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4, bottom: 1),
-                    child: const Text(
-                      "Xem tất cả",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0057C2),
-                        letterSpacing: -0.2,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ScheduleListScreen(),
+                        ),
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.only(right: 4, bottom: 1),
+                      child: Text(
+                        "Xem tất cả",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF0057C2),
+                          letterSpacing: -0.2,
+                        ),
                       ),
                     ),
                   ),
@@ -597,12 +651,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
 
       /// FLOAT BUTTON
-      floatingActionButton: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: const BoxDecoration(
-          color: Color(0xFF2F6CD3),
-          shape: BoxShape.circle,
-        ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF2F6CD3),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const BookingPage()),
+          );
+        },
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
