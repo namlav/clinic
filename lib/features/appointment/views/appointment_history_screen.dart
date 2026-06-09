@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../../profile/models/medical_appointment_model.dart';
+import '../../../services/appointment_service.dart';
 
 class AppointmentHistoryScreen extends StatefulWidget {
   const AppointmentHistoryScreen({super.key});
@@ -10,16 +11,13 @@ class AppointmentHistoryScreen extends StatefulWidget {
 }
 
 class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
-  late List<MedicalAppointment> appointments;
-  late List<MedicalAppointment> filteredAppointments;
+  late TextEditingController searchController;
   String selectedFilter = 'Tất cả';
-  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _initializeMockData();
-    searchController.addListener(_filterAppointments);
+    searchController = TextEditingController();
   }
 
   @override
@@ -28,86 +26,8 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
     super.dispose();
   }
 
-  void _initializeMockData() {
-    appointments = [
-      MedicalAppointment(
-        id: '1',
-        doctorName: 'PGS.TS.BS. Nguyễn Trí Thoại',
-        specialization: 'Khoa tim mạch',
-        hospital: 'Bệnh viện Anh',
-        avatarUrl: 'assets/doctor1.jpg',
-        appointmentDate: DateTime(2025, 4, 24),
-        status: 'Hoàn thành',
-        notes: 'Khám sức khỏe định kỳ',
-        isUpcoming: false,
-      ),
-      MedicalAppointment(
-        id: '2',
-        doctorName: 'TS.BS. Đặng Vinh Quang',
-        specialization: 'Khoa nội tiết',
-        hospital: 'Bệnh viện Nhân Sâm',
-        avatarUrl: 'assets/doctor2.jpg',
-        appointmentDate: DateTime(2025, 5, 12),
-        status: 'Hoàn thành',
-        notes: 'Khám tiểu đường',
-        isUpcoming: false,
-      ),
-      MedicalAppointment(
-        id: '3',
-        doctorName: 'PGS.TS.BS. Lê Thái Văn Thạnh',
-        specialization: 'Khoa nội khoa',
-        hospital: 'Bệnh viện Sài Gòn',
-        avatarUrl: 'assets/doctor3.jpg',
-        appointmentDate: DateTime(2025, 6, 15),
-        status: 'Sắp tới',
-        notes: 'Tái khám',
-        isUpcoming: true,
-      ),
-      MedicalAppointment(
-        id: '4',
-        doctorName: 'BS. Phòng Khám Ngành Đảng',
-        specialization: 'Khoa nha khoa',
-        hospital: 'Bệnh viện Miễn Quy',
-        avatarUrl: 'assets/doctor4.jpg',
-        appointmentDate: DateTime(2025, 6, 25),
-        status: 'Nhắc nhở',
-        notes: 'Lịch khám gần nhất',
-        isUpcoming: true,
-      ),
-    ];
-    filteredAppointments = appointments;
-  }
-
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
-
-  void _filterAppointments() {
-    setState(() {
-      filteredAppointments = appointments.where((apt) {
-        final query = searchController.text.toLowerCase();
-        final matchesSearch =
-            query.isEmpty ||
-            apt.doctorName.toLowerCase().contains(query) ||
-            apt.hospital.toLowerCase().contains(query);
-
-        var matchesFilter = true;
-        if (selectedFilter == 'Hoàn thành') {
-          matchesFilter = !apt.isUpcoming;
-        } else if (selectedFilter == 'Sắp tới') {
-          matchesFilter = apt.isUpcoming;
-        }
-
-        return matchesSearch && matchesFilter;
-      }).toList();
-    });
-  }
-
-  void _onFilterChanged(String filter) {
-    setState(() {
-      selectedFilter = filter;
-    });
-    _filterAppointments();
   }
 
   @override
@@ -134,41 +54,80 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSummaryCard(),
-            const SizedBox(height: 16),
-            _buildSearchSection(),
-            const SizedBox(height: 18),
-            _buildSectionHeading(),
-            const SizedBox(height: 12),
-            if (filteredAppointments.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 40),
-                  child: Text(
-                    'Không tìm thấy lịch khám',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                  ),
-                ),
-              )
-            else
-              ...filteredAppointments.map(_buildAppointmentTile),
-            const SizedBox(height: 20),
-          ],
-        ),
+      body: FutureBuilder<List<MedicalAppointment>>(
+        future: AppointmentService.fetchAppointmentHistory(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
+                ],
+              ),
+            );
+          }
+
+          final appointments = snapshot.data ?? [];
+          final query = searchController.text.toLowerCase();
+          final filteredAppointments = appointments.where((apt) {
+            final matchesSearch =
+                query.isEmpty ||
+                apt.doctorName.toLowerCase().contains(query) ||
+                apt.hospital.toLowerCase().contains(query);
+
+            var matchesFilter = true;
+            if (selectedFilter == 'Hoàn thành') {
+              matchesFilter = !apt.isUpcoming;
+            } else if (selectedFilter == 'Sắp tới') {
+              matchesFilter = apt.isUpcoming;
+            }
+
+            return matchesSearch && matchesFilter;
+          }).toList();
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSummaryCard(appointments),
+                const SizedBox(height: 16),
+                _buildSearchSection(filteredAppointments.length),
+                const SizedBox(height: 18),
+                _buildSectionHeading(filteredAppointments.length),
+                const SizedBox(height: 12),
+                if (filteredAppointments.isEmpty)
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Text(
+                        'Không tìm thấy lịch khám',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                      ),
+                    ),
+                  )
+                else
+                  ...filteredAppointments.map(_buildAppointmentTile),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildSummaryCard() {
-    final nextAppointment = appointments.firstWhere(
-      (a) => a.isUpcoming,
-      orElse: () => appointments.first,
-    );
+  Widget _buildSummaryCard(List<MedicalAppointment> appointments) {
+    final nextAppointment = appointments.isNotEmpty
+        ? (appointments.firstWhere((a) => a.isUpcoming, orElse: () => appointments.first))
+        : null;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -243,51 +202,62 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
             ],
           ),
           const SizedBox(height: 18),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          if (nextAppointment != null)
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _formatDate(nextAppointment.appointmentDate),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          color: Color(0xFF111827),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        nextAppointment.doctorName,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    const Text(
+                      'Lần khám',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    ),
+                    const SizedBox(height: 6),
                     Text(
-                      _formatDate(nextAppointment.appointmentDate),
+                      '${appointments.length}',
                       style: const TextStyle(
-                        fontSize: 20,
+                        fontSize: 24,
                         color: Color(0xFF111827),
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      nextAppointment.doctorName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF374151),
-                      ),
-                    ),
                   ],
                 ),
+              ],
+            )
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'Chưa có lịch khám',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    'Lần khám',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${appointments.length}',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      color: Color(0xFF111827),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -366,7 +336,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
     );
   }
 
-  Widget _buildSearchSection() {
+  Widget _buildSearchSection(int count) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -390,6 +360,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
               Expanded(
                 child: TextField(
                   controller: searchController,
+                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     hintText: 'Tìm kiếm bác sĩ, bệnh viện...',
                     hintStyle: TextStyle(
@@ -435,7 +406,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
   Widget _buildSelectionChip(String label) {
     final isSelected = selectedFilter == label;
     return GestureDetector(
-      onTap: () => _onFilterChanged(label),
+      onTap: () => setState(() => selectedFilter = label),
       child: Container(
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -466,7 +437,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
     );
   }
 
-  Widget _buildSectionHeading() {
+  Widget _buildSectionHeading(int count) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -483,7 +454,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              '${filteredAppointments.length} mục',
+              '$count mục',
               style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
             ),
           ],

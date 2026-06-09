@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../models/vaccination_model.dart';
+import '../../../services/vaccination_service.dart';
 
 class VaccinationHistoryScreen extends StatefulWidget {
   const VaccinationHistoryScreen({super.key});
@@ -10,63 +11,8 @@ class VaccinationHistoryScreen extends StatefulWidget {
 }
 
 class _VaccinationHistoryScreenState extends State<VaccinationHistoryScreen> {
-  late List<VaccinationRecord> vaccinations;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeMockData();
-  }
-
-  void _initializeMockData() {
-    vaccinations = [
-      VaccinationRecord(
-        id: '1',
-        vaccineName: 'COVID-19 (Booster)',
-        status: 'Sắp Cập Nhật',
-        date: '',
-        nextDate: '15/03/2025',
-        location: 'Phòng khám Nguyễn Khôi Khoản',
-        description: 'Liều tăng cường sau 6 tháng',
-        isDone: false,
-      ),
-      VaccinationRecord(
-        id: '2',
-        vaccineName: 'COVID-19 (Modernized)',
-        status: 'Đã Hoàn Thành',
-        date: '12/10/2023',
-        nextDate: '',
-        location: 'Phòng Khám Thành Công',
-        description: 'Liều 2',
-        isDone: true,
-      ),
-      VaccinationRecord(
-        id: '3',
-        vaccineName: 'Influenza (Quadrivalent)',
-        status: 'Đã Hoàn Thành',
-        date: '08/09/2023',
-        nextDate: '',
-        location: 'Bệnh viện Quân Y',
-        description: 'Liều 1',
-        isDone: true,
-      ),
-      VaccinationRecord(
-        id: '4',
-        vaccineName: 'Viêm Gan B',
-        status: 'Đã Hoàn Thành',
-        date: '15/08/2023',
-        nextDate: '',
-        location: 'Bệnh viện Đại Anh',
-        description: 'Liều 3',
-        isDone: true,
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
-    final upcomingVaccines = vaccinations.where((v) => !v.isDone).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FB),
       appBar: AppBar(
@@ -86,30 +32,60 @@ class _VaccinationHistoryScreenState extends State<VaccinationHistoryScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (upcomingVaccines.isNotEmpty) ...[
-              _buildUpcomingCard(upcomingVaccines.first),
-              const SizedBox(height: 16),
-              _buildMissingInfoCard(),
-            ],
-            const SizedBox(height: 20),
-            const Text(
-              'Lịch Trình',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111827),
+      body: FutureBuilder<List<VaccinationRecord>>(
+        future: VaccinationService.fetchVaccinationHistory(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
+                ],
               ),
+            );
+          }
+
+          final vaccinations = snapshot.data ?? [];
+          final upcomingVaccines = vaccinations
+              .where((v) => !v.isDone)
+              .toList();
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (upcomingVaccines.isNotEmpty) ...[
+                  _buildUpcomingCard(upcomingVaccines.first),
+                  const SizedBox(height: 16),
+                  _buildMissingInfoCard(),
+                ],
+                const SizedBox(height: 20),
+                const Text(
+                  'Lịch Trình',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (vaccinations.isEmpty)
+                  const Center(child: Text('Không có lịch tiêm nào'))
+                else
+                  ...vaccinations.map(_buildVaccinationTile),
+                const SizedBox(height: 20),
+              ],
             ),
-            const SizedBox(height: 14),
-            ...vaccinations.map(_buildVaccinationTile),
-            const SizedBox(height: 20),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

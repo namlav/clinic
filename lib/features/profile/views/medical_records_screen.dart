@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../models/health_record_model.dart';
+import '../../../services/medical_records_service.dart';
 
 class MedicalRecordsScreen extends StatefulWidget {
   const MedicalRecordsScreen({super.key});
@@ -9,53 +10,24 @@ class MedicalRecordsScreen extends StatefulWidget {
 }
 
 class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
-  late List<HealthRecord> records;
+  late TextEditingController searchController;
+  List<HealthRecord> filteredRecords = [];
 
   @override
   void initState() {
     super.initState();
-    _initializeMockData();
+    searchController = TextEditingController();
+    searchController.addListener(_filterRecords);
   }
 
-  void _initializeMockData() {
-    records = [
-      HealthRecord(
-        id: '1',
-        title: 'Xét nghiệm máu',
-        icon: '🔬',
-        date: '12/02/2025',
-        fileSize: '1.2 MB',
-        fileFormat: 'PDF',
-        isDownloadable: true,
-      ),
-      HealthRecord(
-        id: '2',
-        title: 'Chụp X quang vùng ngực',
-        icon: '🫁',
-        date: '21/01/2025',
-        fileSize: '0.8 MB',
-        fileFormat: 'PDF',
-        isDownloadable: true,
-      ),
-      HealthRecord(
-        id: '3',
-        title: 'Toa thuốc',
-        icon: '💊',
-        date: '11/01/2025',
-        fileSize: '450 KB',
-        fileFormat: 'PDF',
-        isDownloadable: true,
-      ),
-      HealthRecord(
-        id: '4',
-        title: 'Xét nghiệm nước tiểu',
-        icon: '🧪',
-        date: '01/01/2025',
-        fileSize: '680 KB',
-        fileFormat: 'PDF',
-        isDownloadable: true,
-      ),
-    ];
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  void _filterRecords() {
+    setState(() {});
   }
 
   @override
@@ -79,30 +51,64 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoCard(),
-            const SizedBox(height: 16),
-            _buildSearchBar(),
-            const SizedBox(height: 20),
-            const Text(
-              'Hồ Sơ Y Tế',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111827),
+      body: FutureBuilder<List<HealthRecord>>(
+        future: MedicalRecordsService.fetchMedicalRecords(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
+                ],
               ),
+            );
+          }
+
+          final records = snapshot.data ?? [];
+          final query = searchController.text.toLowerCase();
+          filteredRecords = records
+              .where(
+                (record) =>
+                    query.isEmpty || record.title.toLowerCase().contains(query),
+              )
+              .toList();
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoCard(),
+                const SizedBox(height: 16),
+                _buildSearchBar(),
+                const SizedBox(height: 20),
+                const Text(
+                  'Hồ Sơ Y Tế',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                if (filteredRecords.isEmpty)
+                  const Center(child: Text('Không có hồ sơ nào'))
+                else
+                  ...filteredRecords.map(_buildRecordTile),
+                const SizedBox(height: 14),
+                _buildMissingRecordCard(),
+                const SizedBox(height: 22),
+              ],
             ),
-            const SizedBox(height: 14),
-            ...records.map(_buildRecordTile),
-            const SizedBox(height: 14),
-            _buildMissingRecordCard(),
-            const SizedBox(height: 22),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -361,13 +367,17 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
         ],
       ),
       child: Row(
-        children: const [
-          Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
-          SizedBox(width: 12),
+        children: [
+          const Icon(Icons.search, color: Color(0xFF9CA3AF), size: 20),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              'Tìm kiếm hồ sơ y tế...',
-              style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+            child: TextField(
+              controller: searchController,
+              decoration: const InputDecoration(
+                hintText: 'Tìm kiếm hồ sơ y tế...',
+                border: InputBorder.none,
+                hintStyle: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+              ),
             ),
           ),
         ],

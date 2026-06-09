@@ -267,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.white.withOpacity(0.82),
+                                  color: Colors.white.withValues(alpha: 0.82),
                                   fontWeight: FontWeight.w400,
                                 ),
                               ),
@@ -300,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(18),
 
-                              color: Colors.white.withOpacity(0.12),
+                              color: Colors.white.withValues(alpha: 0.12),
                             ),
 
                             child: Column(
@@ -312,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Icon(
                                       Icons.calendar_today_outlined,
                                       size: 14,
-                                      color: Colors.white.withOpacity(0.85),
+                                      color: Colors.white.withValues(alpha: 0.85),
                                     ),
 
                                     const SizedBox(width: 6),
@@ -324,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         fontSize: 11,
                                         letterSpacing: 1,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.white.withOpacity(0.75),
+                                        color: Colors.white.withValues(alpha: 0.75),
                                       ),
                                     ),
                                   ],
@@ -362,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(18),
 
-                              color: Colors.white.withOpacity(0.12),
+                              color: Colors.white.withValues(alpha: 0.12),
                             ),
 
                             child: Column(
@@ -374,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Icon(
                                       Icons.access_time_outlined,
                                       size: 14,
-                                      color: Colors.white.withOpacity(0.85),
+                                      color: Colors.white.withValues(alpha: 0.85),
                                     ),
 
                                     const SizedBox(width: 6),
@@ -386,7 +386,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         fontSize: 11,
                                         letterSpacing: 1,
                                         fontWeight: FontWeight.w500,
-                                        color: Colors.white.withOpacity(0.75),
+                                        color: Colors.white.withValues(alpha: 0.75),
                                       ),
                                     ),
                                   ],
@@ -542,7 +542,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(

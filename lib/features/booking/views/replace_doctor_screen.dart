@@ -187,7 +187,7 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
 
             blurRadius: 20,
 
@@ -548,7 +548,7 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
 
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
 
             blurRadius: 20,
 

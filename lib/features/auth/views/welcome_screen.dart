@@ -33,7 +33,7 @@ class WelcomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(25),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF0056A7).withOpacity(0.3),
+                        color: const Color(0xFF0056A7).withValues(alpha: 0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 10),
                       ),

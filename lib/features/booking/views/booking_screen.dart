@@ -119,8 +119,8 @@ class _BookingPageState extends State<BookingPage> {
                     boxShadow: [
                       BoxShadow(
                         color:
-                            Colors.black.withOpacity(
-                          0.04,
+                            Colors.black.withValues(
+                          alpha: 0.04,
                         ),
 
                         blurRadius: 14,
@@ -351,7 +351,7 @@ class _BookingPageState extends State<BookingPage> {
           boxShadow: [
             BoxShadow(
               color:
-                  Colors.black.withOpacity(0.05),
+                  Colors.black.withValues(alpha: 0.05),
 
               blurRadius: 20,
               offset: const Offset(0, -4),
@@ -417,7 +417,7 @@ class _BookingPageState extends State<BookingPage> {
         boxShadow: [
           BoxShadow(
             color:
-                Colors.black.withOpacity(0.05),
+                Colors.black.withValues(alpha: 0.05),
 
             blurRadius: 18,
 
@@ -662,7 +662,7 @@ class _BookingPageState extends State<BookingPage> {
         boxShadow: [
           BoxShadow(
             color:
-                Colors.black.withOpacity(0.05),
+                Colors.black.withValues(alpha: 0.05),
 
             blurRadius: 18,
 
@@ -1032,7 +1032,7 @@ class _BookingPageState extends State<BookingPage> {
           boxShadow: [
             BoxShadow(
               color:
-                  Colors.blue.withOpacity(0.2),
+                  Colors.blue.withValues(alpha: 0.2),
 
               blurRadius: 12,
               offset: const Offset(0, 4),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
 import 'medical_records_screen.dart';
 import 'vaccination_history_screen.dart';
@@ -6,6 +6,7 @@ import 'health_insurance_screen.dart';
 import '../../appointment/views/appointment_history_screen.dart';
 import '../../notification/views/notification_settings_screen.dart';
 import '../../../widgets/fade_page_route.dart';
+import '../../../services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -15,30 +16,6 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late Patient patient;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeMockData();
-  }
-
-  void _initializeMockData() {
-    patient = Patient(
-      id: '1',
-      fullName: 'Nguyễn Khỏe Khoắn',
-      email: 'nguyen.khoai@example.com',
-      phone: '+84 123 456 789',
-      avatarUrl: 'assets/avatar.jpg',
-      memberType: 'Premium Member',
-      memberSince: DateTime(2023, 4, 21),
-      heartRate: 72,
-      bloodPressure: '120/80',
-      weight: 70,
-      height: 175,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,34 +42,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileCard(),
-            const SizedBox(height: 18),
-            _buildHealthOverviewCard(),
-            const SizedBox(height: 18),
-            _buildSectionTitle('Quản lý hồ sơ'),
-            const SizedBox(height: 12),
-            _buildFeatureGrid(),
-            const SizedBox(height: 20),
-            _buildSectionTitle('Cài đặt'),
-            const SizedBox(height: 12),
-            _buildSettingsTile('🔔 Thông Báo', 'notification_settings'),
-            const SizedBox(height: 10),
-            _buildSettingsTile('❓ Hỗ Trợ', null),
-            const SizedBox(height: 10),
-            _buildSettingsTile('🚪 Đăng xuất', null),
-            const SizedBox(height: 24),
-          ],
-        ),
+      body: FutureBuilder<Patient>(
+        future: ProfileService.fetchPatient(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
+                ],
+              ),
+            );
+          }
+
+          final patient = snapshot.data;
+          if (patient == null) {
+            return const Center(child: Text('No data available'));
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProfileCard(patient),
+                const SizedBox(height: 18),
+                _buildHealthOverviewCard(patient),
+                const SizedBox(height: 18),
+                _buildSectionTitle('Quản lý hồ sơ'),
+                const SizedBox(height: 12),
+                _buildFeatureGrid(),
+                const SizedBox(height: 20),
+                _buildSectionTitle('Cài đặt'),
+                const SizedBox(height: 12),
+                _buildSettingsTile('🔔 Thông Báo', 'notification_settings'),
+                const SizedBox(height: 10),
+                _buildSettingsTile('❓ Hỗ Trợ', null),
+                const SizedBox(height: 10),
+                _buildSettingsTile('🚪 Đăng xuất', null),
+                const SizedBox(height: 24),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProfileCard() {
+  Widget _buildProfileCard(Patient patient) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
@@ -140,6 +144,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Thành viên từ ${patient.memberSince.day}/${patient.memberSince.month}/${patient.memberSince.year}',
             style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Patient ID: #${patient.id}',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+          ),
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -180,7 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildHealthOverviewCard() {
+  Widget _buildHealthOverviewCard(Patient patient) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -206,11 +215,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          _buildHealthStat('72', 'bpm', 'Nhịp Tim'),
+          _buildHealthStat(patient.heartRate.toString(), 'bpm', 'Nhịp Tim'),
           const SizedBox(height: 16),
-          _buildHealthStat('120/80', '', 'Huyết Áp'),
+          _buildHealthStat(patient.bloodPressure, '', 'Huyết Áp'),
           const SizedBox(height: 16),
-          _buildHealthStat('70', 'kg', 'Cân Nặng'),
+          _buildHealthStat(patient.weight.toString(), 'kg', 'Cân Nặng'),
         ],
       ),
     );

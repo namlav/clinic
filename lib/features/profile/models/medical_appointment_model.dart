@@ -20,4 +20,33 @@ class MedicalAppointment {
     required this.notes,
     required this.isUpcoming,
   });
+
+  factory MedicalAppointment.fromJson(Map<String, dynamic> json) {
+    final appointmentDate = json['appointmentdate'] != null
+        ? DateTime.parse(json['appointmentdate'])
+        : DateTime.now();
+    final isUpcoming = appointmentDate.isAfter(DateTime.now());
+
+    return MedicalAppointment(
+      id: json['appointmentid']?.toString() ?? '',
+      doctorName: json['doctors']?['fullname'] ?? 'Bác sĩ',
+      specialization:
+          json['doctors']?['specialties']?['specialtyname'] ?? 'Khoa',
+      hospital: 'Phòng Khám',
+      avatarUrl: json['doctors']?['avatarurl'] ?? 'assets/avatar.jpg',
+      appointmentDate: appointmentDate,
+      status: json['status'] ?? 'Đang chờ',
+      notes: json['notes'] ?? '',
+      isUpcoming: isUpcoming,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'appointmentid': id,
+      'appointmentdate': appointmentDate.toIso8601String(),
+      'status': status,
+      'notes': notes,
+    };
+  }
 }

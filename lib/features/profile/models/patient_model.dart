@@ -24,4 +24,38 @@ class Patient {
     required this.weight,
     required this.height,
   });
+
+  factory Patient.fromJson(Map<String, dynamic> json) {
+    return Patient(
+      id: json['userid']?.toString() ?? json['id']?.toString() ?? '',
+      fullName: json['fullname'] ?? json['full_name'] ?? json['name'] ?? 'Người dùng',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      avatarUrl: json['avatarurl'] ?? json['avatar_url'] ?? '',
+      memberType: json['membershiptier'] ?? json['membership_tier'] ?? 'Standard',
+      memberSince: json['joineddate'] != null
+          ? DateTime.parse(json['joineddate'])
+          : (json['joined_date'] != null ? DateTime.parse(json['joined_date']) : DateTime.now()),
+      heartRate: json['heartrate'] ?? json['heart_rate'] ?? 0,
+      bloodPressure: json['bloodpressure'] ?? json['blood_pressure'] ?? '0/0',
+      weight: (json['weightkg'] ?? json['weight_kg'] ?? 0).toDouble(),
+      height: (json['height'] ?? 0).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userid': id,
+      'fullname': fullName,
+      'email': email,
+      'phone': phone,
+      'avatarurl': avatarUrl,
+      'membershiptier': memberType,
+      'joineddate': memberSince.toIso8601String(),
+      'heartrate': heartRate,
+      'bloodpressure': bloodPressure,
+      'weightkg': weight,
+      'height': height,
+    };
+  }
 }

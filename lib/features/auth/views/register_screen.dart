@@ -64,10 +64,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     String email = _emailController.text.trim().toLowerCase();
 
     try {
-      if (isSMS)
+      if (isSMS) {
         await supabase.auth.signInWithOtp(phone: phone);
-      else
+      } else {
         await supabase.auth.signInWithOtp(email: email);
+      }
 
       if (!mounted) return;
       Navigator.push(
@@ -180,13 +181,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (isName &&
             !RegExp(
               r"^[a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯĂẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼỀỀỂưăạảấầẩẫậắằẳẵặẹẻẽềềểỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪễệỉịọỏốồổỗộớờởỡợụủứừỬỮỰỲỴÝỶỸửữựỳỵýỷỹ\s]+$",
-            ).hasMatch(val))
+            ).hasMatch(val)) {
           return "Tên không chứa số/ký tự lạ";
+        }
         if (isEmail &&
-            !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val))
+            !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(val)) {
           return "Email sai định dạng";
-        if (isPhone && !RegExp(r'^(0|84)[3|5|7|8|9][0-9]{8}$').hasMatch(val))
+        }
+        if (isPhone && !RegExp(r'^(0|84)[3|5|7|8|9][0-9]{8}$').hasMatch(val)) {
           return "SĐT 10 số không hợp lệ";
+        }
         if (isPass && val.length < 6) return "Mật khẩu tối thiểu 6 ký tự";
         return null;
       },

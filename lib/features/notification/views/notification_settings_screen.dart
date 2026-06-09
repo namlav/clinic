@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import '../models/notification_settings_model.dart';
+import '../../../services/notification_service.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -11,81 +12,28 @@ class NotificationSettingsScreen extends StatefulWidget {
 
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
-  late List<NotificationSettings> notifications;
+  late Map<String, bool> toggleStates;
 
   @override
   void initState() {
     super.initState();
-    _initializeMockData();
+    toggleStates = {};
   }
 
-  void _initializeMockData() {
-    notifications = [
-      NotificationSettings(
-        id: '1',
-        title: 'Nhận báo cáo lịch biểu Email',
-        description: 'Bạn sẽ nhận được email về lịch khám hàng ngày',
-        isEnabled: true,
-        icon: 'email',
-        time: '07:00',
-      ),
-      NotificationSettings(
-        id: '2',
-        title: 'Thông báo qua tin nhắn SMS',
-        description: 'Bạn sẽ nhận được lời nhắc nhở qua SMS',
-        isEnabled: true,
-        icon: 'sms',
-        time: '08:00',
-      ),
-      NotificationSettings(
-        id: '3',
-        title: 'Cập nhật về sự kiện y tế',
-        description: 'Nhận thông tin về khám sàng lọc và chương trình sức khỏe',
-        isEnabled: true,
-        icon: 'medical',
-        time: null,
-      ),
-      NotificationSettings(
-        id: '4',
-        title: 'Nhắc nhở lịch khám',
-        description: 'Bạn sẽ nhận lời nhắc trước cuộc hẹn 1 ngày',
-        isEnabled: true,
-        icon: 'appointment',
-        time: '18:00',
-      ),
-      NotificationSettings(
-        id: '5',
-        title: 'Bản cập nhật bảo hiểm',
-        description: 'Thông báo khi thay đổi quyền lợi bảo hiểm',
-        isEnabled: false,
-        icon: 'insurance',
-        time: null,
-      ),
-      NotificationSettings(
-        id: '6',
-        title: 'Nhắc nhở tiêm vắc xin',
-        description: 'Nhận lời nhắc khi lịch tiêm sắp tới',
-        isEnabled: true,
-        icon: 'vaccine',
-        time: '09:00',
-      ),
-      NotificationSettings(
-        id: '7',
-        title: 'Thông báo huyết áp cao',
-        description: 'Nhận cảnh báo khi áp suất tăng cao',
-        isEnabled: false,
-        icon: 'alert',
-        time: null,
-      ),
-      NotificationSettings(
-        id: '8',
-        title: 'Thông báo hệ thống',
-        description: 'Nhận cập nhật từ hệ thống SereneHealth',
-        isEnabled: true,
-        icon: 'admin',
-        time: null,
-      ),
-    ];
+  void _handleToggle(String id, bool newValue) {
+    setState(() {
+      toggleStates[id] = newValue;
+    });
+
+    NotificationService.updateNotificationSetting(id, {
+      'emailsummary': newValue,
+      'smsnotification': newValue,
+      'appointmentreminder': newValue,
+      'medicalrecordupdate': newValue,
+      'healthtips': newValue,
+      'appupdates': newValue,
+      'quietmode': newValue,
+    });
   }
 
   @override
@@ -109,34 +57,65 @@ class _NotificationSettingsScreenState
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildNotificationHeader(),
-            const SizedBox(height: 20),
-            _buildSectionLabel('Ưu tiên thông báo'),
-            const SizedBox(height: 12),
-            _buildNotificationTile(0),
-            const SizedBox(height: 12),
-            _buildNotificationTile(1),
-            const SizedBox(height: 20),
-            _buildSectionLabel('Danh mục'),
-            const SizedBox(height: 12),
-            ...List.generate(
-              notifications.length - 2,
-              (index) => Column(
+      body: FutureBuilder<List<NotificationSettings>>(
+        future: NotificationService.fetchNotificationSettings(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildNotificationTile(index + 2),
-                  const SizedBox(height: 12),
+                  const Icon(Icons.error, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
                 ],
               ),
+            );
+          }
+
+          final notifications = snapshot.data ?? [];
+          if (notifications.isEmpty) {
+            return const Center(child: Text('No notifications'));
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildNotificationHeader(),
+                const SizedBox(height: 20),
+                if (notifications.isNotEmpty) ...[
+                  _buildSectionLabel('Ưu tiên thông báo'),
+                  const SizedBox(height: 12),
+                  _buildNotificationTile(notifications[0]),
+                  const SizedBox(height: 12),
+                  if (notifications.length > 1)
+                    _buildNotificationTile(notifications[1]),
+                ],
+                const SizedBox(height: 20),
+                _buildSectionLabel('Danh mục'),
+                const SizedBox(height: 12),
+                ...notifications
+                    .skip(2)
+                    .map(
+                      (notification) => Column(
+                        children: [
+                          _buildNotificationTile(notification),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                _buildQuietModeCard(),
+                const SizedBox(height: 24),
+              ],
             ),
-            _buildQuietModeCard(),
-            const SizedBox(height: 24),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -200,8 +179,9 @@ class _NotificationSettingsScreenState
     );
   }
 
-  Widget _buildNotificationTile(int index) {
-    final notification = notifications[index];
+  Widget _buildNotificationTile(NotificationSettings notification) {
+    final isEnabled = toggleStates[notification.id] ?? notification.isEnabled;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -265,19 +245,8 @@ class _NotificationSettingsScreenState
             ),
           ),
           Switch(
-            value: notification.isEnabled,
-            onChanged: (value) {
-              setState(() {
-                notifications[index] = NotificationSettings(
-                  id: notification.id,
-                  title: notification.title,
-                  description: notification.description,
-                  isEnabled: value,
-                  icon: notification.icon,
-                  time: notification.time,
-                );
-              });
-            },
+            value: isEnabled,
+            onChanged: (value) => _handleToggle(notification.id, value),
             activeThumbColor: const Color(0xFF2563EB),
           ),
         ],

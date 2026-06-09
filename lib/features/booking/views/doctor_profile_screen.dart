@@ -160,7 +160,7 @@ class _DoctorProfilePageState
         boxShadow: [
           BoxShadow(
             color:
-                Colors.black.withOpacity(0.04),
+                Colors.black.withValues(alpha: 0.04),
 
             blurRadius: 18,
 
@@ -386,8 +386,8 @@ class _DoctorProfilePageState
             boxShadow: [
               BoxShadow(
                 color:
-                    Colors.black.withOpacity(
-                  0.03,
+                    Colors.black.withValues(
+                  alpha: 0.03,
                 ),
 
                 blurRadius: 12,
@@ -446,8 +446,8 @@ class _DoctorProfilePageState
             boxShadow: [
               BoxShadow(
                 color:
-                    Colors.black.withOpacity(
-                  0.03,
+                    Colors.black.withValues(
+                  alpha: 0.03,
                 ),
 
                 blurRadius: 12,
@@ -687,8 +687,8 @@ class _DoctorProfilePageState
                       : [
                           BoxShadow(
                             color: Colors.black
-                                .withOpacity(
-                              0.04,
+                                .withValues(
+                              alpha: 0.04,
                             ),
 
                             blurRadius: 8,
