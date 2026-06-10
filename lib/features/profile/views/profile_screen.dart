@@ -155,15 +155,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildStatusBadge(
-                'ACTIVE',
-                const Color(0xFFEFF6FF),
-                const Color(0xFF2563EB),
-              ),
-              const SizedBox(width: 10),
-              _buildStatusBadge(
-                'Premium',
-                const Color(0xFFEEF2FF),
-                const Color(0xFF4338CA),
+                patient.isActive ? 'ACTIVE' : 'INACTIVE',
+                patient.isActive ? const Color(0xFFEFF6FF) : const Color(0xFFFFEAEA),
+                patient.isActive ? const Color(0xFF2563EB) : const Color(0xFFDC2626),
               ),
             ],
           ),

@@ -12,6 +12,7 @@ class Patient {
   final String bloodPressure;
   final double weight;
   final double height;
+  final bool isActive;
 
   Patient({
     required this.id,
@@ -25,6 +26,7 @@ class Patient {
     required this.bloodPressure,
     required this.weight,
     required this.height,
+    required this.isActive,
   });
 
   factory Patient.fromJson(Map<String, dynamic> json) {
@@ -42,6 +44,7 @@ class Patient {
       bloodPressure: json['bloodpressure'] ?? json['blood_pressure'] ?? '0/0',
       weight: (json['weightkg'] ?? json['weight_kg'] ?? 0).toDouble(),
       height: (json['height'] ?? 0).toDouble(),
+      isActive: json['isactive'] ?? true,
     );
   }
 
@@ -58,6 +61,7 @@ class Patient {
       'bloodpressure': bloodPressure,
       'weightkg': weight,
       'height': height,
+      'isactive': isActive,
     };
   }
 
