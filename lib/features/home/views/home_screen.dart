@@ -158,7 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 Navigator.push(
                                   context,
                                   FadePageRoute(
-                                    builder: (context) => const SearchScreen(),
+                                    builder: (context) => const BookingPage(),
                                   ),
                                 );
                               }

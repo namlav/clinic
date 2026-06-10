@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'doctor_profile_screen.dart'; 
+import 'package:clinic/widgets/bottom_navigation_bar_widget.dart'; 
+import 'package:clinic/features/home/views/home_screen.dart';
+import 'package:clinic/features/home/views/search_screen.dart'; 
+import 'package:clinic/features/appointment/views/schedule_list_screen.dart';
+import 'package:clinic/features/profile/views/profile_screen.dart';
 
 class BookingPage extends StatefulWidget {
   const BookingPage({super.key});
@@ -119,15 +124,16 @@ class _BookingPageState extends State<BookingPage> {
     });
   }
 
+  // LƯU Ý CHỈ CHỈNH SỬA TẠI ĐÂY: Khi bấm nút SEARCH (index == 1), app điều hướng qua đúng trang SearchScreen của nhóm
   void _handleNavigation(int index) {
-    if (index == 1) return; 
-
     if (index == 0) {
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } else if (index == 1) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SearchScreen()));
     } else if (index == 2) {
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ScheduleListScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ScheduleListScreen()));
     } else if (index == 3) {
-      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
     }
   }
 
@@ -320,6 +326,11 @@ class _BookingPageState extends State<BookingPage> {
             ),
           ],
         ),
+      ),
+
+      bottomNavigationBar: BottomNavigationBarApp(
+        initialIndex: 1, 
+        onItemTapped: _handleNavigation, 
       ),
     );
   }
