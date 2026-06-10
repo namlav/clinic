@@ -7,6 +7,7 @@ class HealthRecord {
   final String date;
   final String fileSize;
   final String fileFormat;
+  final String fileUrl;
   final bool isDownloadable;
 
   HealthRecord({
@@ -16,6 +17,7 @@ class HealthRecord {
     required this.date,
     required this.fileSize,
     required this.fileFormat,
+    required this.fileUrl,
     required this.isDownloadable,
   });
 
@@ -29,6 +31,7 @@ class HealthRecord {
           : '',
       fileSize: _formatFileSize(json['filesize']),
       fileFormat: (json['filetype'] ?? 'PDF').toUpperCase(),
+      fileUrl: json['fileurl'] ?? '',
       isDownloadable: true,
     );
   }
@@ -39,6 +42,7 @@ class HealthRecord {
       'recordtype': title,
       'recorddate': date,
       'filetype': fileFormat.toLowerCase(),
+      'fileurl': fileUrl,
     };
   }
 
@@ -64,7 +68,9 @@ class HealthRecord {
     try {
       final supabase = Supabase.instance.client;
       final response = await supabase.from('medicalrecords').select();
-      return (response as List).map((item) => HealthRecord.fromJson(item)).toList();
+      return (response as List)
+          .map((item) => HealthRecord.fromJson(item))
+          .toList();
     } catch (e) {
       throw Exception('Lỗi lấy hồ sơ y tế: $e');
     }

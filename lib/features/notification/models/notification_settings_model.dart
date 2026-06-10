@@ -108,13 +108,15 @@ class NotificationSettings {
       final response = await supabase
           .from('notificationsettings')
           .select()
-          .eq('userid', userId);
+          .limit(10);
 
       if ((response as List).isEmpty) {
         return _getDefaultSettings();
       }
 
-      return (response as List).map((item) => NotificationSettings.fromJson(item)).toList();
+      return (response as List)
+          .map((item) => NotificationSettings.fromJson(item))
+          .toList();
     } catch (e) {
       return _getDefaultSettings();
     }
@@ -175,22 +177,21 @@ class NotificationSettings {
     ];
   }
 
-  static Future<void> update(String settingId, Map<String, dynamic> updates) async {
+  static Future<void> update(
+    String settingId,
+    Map<String, dynamic> updates,
+  ) async {
     try {
       final supabase = Supabase.instance.client;
       final userId = supabase.auth.currentUser?.id;
 
       if (userId == null) throw Exception('User not authenticated');
 
-      // UPSERT: Insert nếu không có, Update nếu có (tối ưu cho user mới)
-      await supabase.from('notificationsettings').upsert(
-        {
-          'settingid': settingId,
-          'userid': userId,
-          ...updates,
-        },
-        onConflict: 'settingid',
-      );
+      // Update by settingid
+      await supabase
+          .from('notificationsettings')
+          .update(updates)
+          .eq('settingid', int.tryParse(settingId) ?? 1);
     } catch (e) {
       throw Exception('Lỗi cập nhật thông báo: $e');
     }

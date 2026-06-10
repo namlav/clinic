@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/health_record_model.dart';
 import '../models/patient_model.dart';
 
@@ -41,6 +44,95 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
 
   void _filterRecords() {
     setState(() {});
+  }
+
+  Future<void> _downloadRecord(HealthRecord record) async {
+    try {
+      if (record.fileUrl.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không có file để tải'), backgroundColor: Colors.orange),
+        );
+        return;
+      }
+
+      if (await canLaunchUrl(Uri.parse(record.fileUrl))) {
+        await launchUrl(Uri.parse(record.fileUrl), mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không thể mở file'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _uploadRecord() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(type: FileType.any);
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      if (file.size > 50 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('File quá lớn (max 50MB)'), backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đang tải lên...'), duration: Duration(seconds: 3)),
+        );
+      }
+
+      final supabase = Supabase.instance.client;
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) throw Exception('User not authenticated');
+
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
+      final filePath = 'medical_records/$userId/$fileName';
+
+      final bytes = await file.xFile.readAsBytes();
+      await supabase.storage.from('documents').uploadBinary(filePath, bytes);
+
+      final fileUrl = supabase.storage.from('documents').getPublicUrl(filePath);
+
+      await supabase.from('medicalrecords').insert({
+        'userid': userId,
+        'recordtype': file.extension?.toUpperCase() ?? 'DOCUMENT',
+        'recorddate': DateTime.now().toIso8601String(),
+        'filetype': file.extension ?? 'unknown',
+        'fileurl': fileUrl,
+      });
+
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tải lên thành công'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -265,17 +357,20 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
             ),
           ),
           if (record.isDownloadable)
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.download_rounded,
-                color: Color(0xFF2563EB),
-                size: 18,
+            GestureDetector(
+              onTap: () => _downloadRecord(record),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.download_rounded,
+                  color: Color(0xFF2563EB),
+                  size: 18,
+                ),
               ),
             ),
         ],
@@ -332,7 +427,7 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: _uploadRecord,
             style: TextButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF2563EB),

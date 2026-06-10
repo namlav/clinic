@@ -11,6 +11,7 @@ class HealthInsurance {
   final double monthlyPremium;
   final double copay;
   final String status;
+  final double totalInvoiceAmount;
 
   HealthInsurance({
     required this.id,
@@ -23,6 +24,7 @@ class HealthInsurance {
     required this.monthlyPremium,
     required this.copay,
     required this.status,
+    this.totalInvoiceAmount = 0.0,
   });
 
   factory HealthInsurance.fromJson(Map<String, dynamic> json) {
@@ -41,6 +43,7 @@ class HealthInsurance {
       monthlyPremium: (json['monthlypremium'] ?? 0).toDouble(),
       copay: (json['deductibletotal'] ?? 0).toDouble(),
       status: json['status'] ?? 'ACTIVE',
+      totalInvoiceAmount: (json['total_invoice_amount'] ?? 0).toDouble(),
     );
   }
 
@@ -62,8 +65,39 @@ class HealthInsurance {
   static Future<HealthInsurance?> fetch() async {
     try {
       final supabase = Supabase.instance.client;
-      final response = await supabase.from('insurances').select().maybeSingle();
-      return response != null ? HealthInsurance.fromJson(response) : null;
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Fetch insurance data - query without userid filter since userid column is INTEGER
+      final insuranceResponse = await supabase
+          .from('insurances')
+          .select()
+          .limit(1)
+          .maybeSingle();
+
+      if (insuranceResponse == null) {
+        return null;
+      }
+
+      // Fetch payments data to calculate total invoice amount
+      final paymentsResponse = await supabase
+          .from('payments')
+          .select('amount')
+          .limit(100);
+
+      double totalInvoiceAmount = 0.0;
+      if (paymentsResponse is List) {
+        totalInvoiceAmount = (paymentsResponse as List).fold<double>(
+          0.0,
+          (sum, payment) => sum + ((payment['amount'] ?? 0) as num).toDouble(),
+        );
+      }
+
+      insuranceResponse['total_invoice_amount'] = totalInvoiceAmount;
+      return HealthInsurance.fromJson(insuranceResponse);
     } catch (e) {
       throw Exception('Lỗi lấy bảo hiểm y tế: $e');
     }

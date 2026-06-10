@@ -83,9 +83,9 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
 
             var matchesFilter = true;
             if (selectedFilter == 'Hoàn thành') {
-              matchesFilter = !apt.isUpcoming;
+              matchesFilter = apt.status == 'Completed';
             } else if (selectedFilter == 'Sắp tới') {
-              matchesFilter = apt.isUpcoming;
+              matchesFilter = apt.status == 'Confirmed';
             }
 
             return matchesSearch && matchesFilter;
