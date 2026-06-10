@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'doctor_profile_screen.dart'; 
-import 'package:clinic/widgets/bottom_navigation_bar_widget.dart'; 
-import 'package:clinic/features/home/views/home_screen.dart';
-import 'package:clinic/features/appointment/views/schedule_list_screen.dart';
-import 'package:clinic/features/profile/views/profile_screen.dart';
 
 class BookingPage extends StatefulWidget {
   const BookingPage({super.key});
@@ -73,7 +69,6 @@ class _BookingPageState extends State<BookingPage> {
           String dateStr = nextApp['appointmentdate'].toString();
           String timeStr = nextApp['starttime'].toString().substring(0, 5);
           
-          // Định dạng ngày sang kiểu Việt Nam (DD/MM/YYYY)
           List<String> dateParts = dateStr.split('-');
           String formattedDate = "${dateParts[2]}/${dateParts[1]}/${dateParts[0]}";
 
@@ -113,7 +108,6 @@ class _BookingPageState extends State<BookingPage> {
       output = output.where((doc) {
         String name = (doc['fullname'] ?? "").toString().toLowerCase();
         String title = (doc['title'] ?? "").toString().toLowerCase();
-        // Quét thêm tên chuyên khoa động lấy từ bảng liên kết specialties
         String specialtyMapped = (doc['specialties']?['specialtyname'] ?? "").toString().toLowerCase();
         
         return name.contains(searchWord) || title.contains(searchWord) || specialtyMapped.contains(searchWord);
@@ -129,11 +123,11 @@ class _BookingPageState extends State<BookingPage> {
     if (index == 1) return; 
 
     if (index == 0) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } else if (index == 2) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ScheduleListScreen()));
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ScheduleListScreen()));
     } else if (index == 3) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+      // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
     }
   }
 
@@ -271,6 +265,7 @@ class _BookingPageState extends State<BookingPage> {
             ),
             const SizedBox(height: 28),
 
+            /// DANH SÁCH BÁC SĨ (DỮ LIỆU ĐỘNG)
             Expanded(
               child: FutureBuilder<List<Map<String, dynamic>>>(
                 future: _doctorsFuture,
@@ -326,15 +321,9 @@ class _BookingPageState extends State<BookingPage> {
           ],
         ),
       ),
-
-      bottomNavigationBar: BottomNavigationBarApp(
-        initialIndex: 1, 
-        onItemTapped: _handleNavigation, 
-      ),
     );
   }
 
-  /// CARD TIÊU CHUẨN
   Widget _doctorCard({
     required String image,
     required String name,
@@ -446,7 +435,6 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  /// CARD LỚN
   Widget _largeDoctorCard({
     required String image,
     required String name,

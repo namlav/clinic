@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'search_screen.dart';
+import '../../../widgets/fade_page_route.dart';
 import 'package:clinic/features/appointment/views/schedule_list_screen.dart';
 import 'package:clinic/features/booking/views/booking_screen.dart';
-
+ 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onSearchTap;
-
+ 
   const HomeScreen({super.key, this.onSearchTap});
-
+ 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+ 
 class _HomeScreenState extends State<HomeScreen> {
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
-
+ 
   late Future<Map<String, dynamic>?> _userProfileFuture;
   late Future<Map<String, dynamic>?> _priorityAppointmentFuture;
   late Future<List<Map<String, dynamic>>> _specialtiesFuture;
-
+ 
   @override
   void initState() {
     super.initState();
@@ -27,33 +30,39 @@ class _HomeScreenState extends State<HomeScreen> {
     _priorityAppointmentFuture = _fetchPriorityAppointment();
     _specialtiesFuture = _fetchSpecialties();
   }
-
+ 
+  //Lấy thông tin cá nhân của User hiện tại từ Supabase
   Future<Map<String, dynamic>?> _fetchUserProfile() async {
     try {
       final authUser = Supabase.instance.client.auth.currentUser;
-
+ 
       if (authUser == null) return null;
-
+ 
       final response = await Supabase.instance.client
           .from('users')
           .select('fullname, avatarurl')
           .eq('authid', authUser.id)
           .maybeSingle();
-
+ 
       return response;
     } catch (e) {
       return null;
     }
   }
-
-  // Lấy cuộc hẹn ưu tiên sắp diễn ra
+ 
+  //  Lấy cuộc hẹn ưu tiên sắp diễn ra
   Future<Map<String, dynamic>?> _fetchPriorityAppointment() async {
     try {
+      // FIX 1: Thêm filter theo user hiện tại
+      final authUser = Supabase.instance.client.auth.currentUser;
+      if (authUser == null) return null;
+ 
       final response = await Supabase.instance.client
           .from('appointments')
           .select(
             'appointmentid, appointmentdate, starttime, endtime, doctors(fullname, title, avatarurl)',
           )
+          .eq('userid', authUser.id)
           .neq('status', 'Cancelled')
           .order('appointmentdate', ascending: true)
           .limit(1)
@@ -63,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return null;
     }
   }
-
+ 
   // Lấy danh sách chuyên khoa
   Future<List<Map<String, dynamic>>> _fetchSpecialties() async {
     try {
@@ -76,35 +85,10 @@ class _HomeScreenState extends State<HomeScreen> {
       return [];
     }
   }
-
-  Future<void> pickDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
-  }
-
-  Future<void> pickTime() async {
-    TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: selectedTime,
-    );
-
-    if (picked != null) {
-      setState(() {
-        selectedTime = picked;
-      });
-    }
-  }
-
+ 
+  // FIX 2: Bỏ pickDate và pickTime vì không liên kết với appointment thật,
+  // tránh gây hiểu lầm cho người dùng
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,14 +100,14 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
-
+ 
               FutureBuilder<Map<String, dynamic>?>(
                 future: _userProfileFuture,
                 builder: (context, userSnapshot) {
                   final userData = userSnapshot.data;
                   final String userAvatar = userData?['avatarurl'] ?? "";
                   final String userFullname = userData?['fullname'] ?? "User";
-
+ 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -141,14 +125,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                   shape: BoxShape.circle,
                                   image: DecorationImage(
                                     image: userAvatar.startsWith('http')
-                                        ? NetworkImage(userAvatar) as ImageProvider
-                                        : const AssetImage("assets/images/ava1.jpg"),
+                                        ? NetworkImage(userAvatar)
+                                              as ImageProvider
+                                        : const AssetImage(
+                                            "assets/images/ava1.jpg",
+                                          ),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
-
+ 
                               /// LOGO TEXT
                               const Text(
                                 "SereneHealth",
@@ -161,10 +148,20 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
-
+ 
+                          /// SEARCH
                           IconButton(
                             onPressed: () {
-                              widget.onSearchTap?.call();
+                              if (widget.onSearchTap != null) {
+                                widget.onSearchTap!();
+                              } else {
+                                Navigator.push(
+                                  context,
+                                  FadePageRoute(
+                                    builder: (context) => const SearchScreen(),
+                                  ),
+                                );
+                              }
                             },
                             icon: const Icon(
                               Icons.search,
@@ -175,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(height: 20),
-
+ 
                       /// WELCOME SECTION
                       const Text(
                         "Chào mừng,",
@@ -202,9 +199,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-
+ 
               const SizedBox(height: 14),
-
+ 
               SizedBox(
                 width: 295,
                 child: const Text(
@@ -219,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 22),
-
+ 
               /// TITLE
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -259,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 14),
-
+ 
               /// APPOINTMENT CARD
               FutureBuilder<Map<String, dynamic>?>(
                 future: _priorityAppointmentFuture,
@@ -277,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
-
+ 
                   final appointment = snapshot.data;
                   if (appointment == null) {
                     return Container(
@@ -299,12 +296,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
-
-                  final doctor = appointment['doctors'] as Map<String, dynamic>?;
-                  final String doctorName = doctor?['fullname'] ?? "Bác sĩ chuyên khoa";
-                  final String specialtyName = doctor?['title'] ?? "Khoa Tổng quát";
+ 
+                  final doctor =
+                      appointment['doctors'] as Map<String, dynamic>?;
+                  final String doctorName =
+                      doctor?['fullname'] ?? "Bác sĩ chuyên khoa";
+                  final String specialtyName =
+                      doctor?['title'] ?? "Khoa Tổng quát";
                   final String avatarUrl = doctor?['avatarurl'] ?? "";
-
+ 
                   return Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -329,6 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Row(
                           children: [
+                            /// DYNAMIC AVATAR BÁC SĨ
                             ClipRRect(
                               borderRadius: BorderRadius.circular(16),
                               child: avatarUrl.startsWith('http')
@@ -368,9 +369,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     specialtyName,
+                                    // FIX 5: Thay withOpacity (deprecated) bằng withAlpha
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Colors.white.withOpacity(0.82),
+                                      color: Colors.white.withAlpha(209),
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
@@ -380,112 +382,121 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 18),
-
-                        /// DATE TIME SHOW
+ 
+                        /// DATE TIME SHOW — FIX 2: Bỏ GestureDetector, chỉ hiển thị thông tin
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            GestureDetector(
-                              onTap: pickDate,
-                              child: Container(
-                                width: 125,
-                                height: 82,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: Colors.white.withOpacity(0.12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.calendar_today_outlined,
-                                          size: 14,
-                                          color: Colors.white.withOpacity(0.85),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          "NGÀY",
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            letterSpacing: 1,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(0.75),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      appointment['appointmentdate'] ??
-                                          "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
+                            Container(
+                              width: 125,
+                              height: 82,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                // FIX 5: Thay withOpacity (deprecated) bằng withAlpha
+                                color: Colors.white.withAlpha(31),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_outlined,
+                                        size: 14,
+                                        // FIX 5: Thay withOpacity (deprecated) bằng withAlpha
+                                        color: Colors.white.withAlpha(217),
                                       ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "NGÀY",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          letterSpacing: 1,
+                                          fontWeight: FontWeight.w500,
+                                          // FIX 5: Thay withOpacity (deprecated) bằng withAlpha
+                                          color: Colors.white.withAlpha(191),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    appointment['appointmentdate'] ?? "—",
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                            GestureDetector(
-                              onTap: pickTime,
-                              child: Container(
-                                width: 125,
-                                height: 82,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: Colors.white.withOpacity(0.12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.access_time_outlined,
-                                          size: 14,
-                                          color: Colors.white.withOpacity(0.85),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          "GIỜ",
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            letterSpacing: 1,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(0.75),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      appointment['starttime'] != null
-                                          ? "${appointment['starttime'].toString().substring(0, 5)} - ${appointment['endtime'].toString().substring(0, 5)}"
-                                          : selectedTime.format(context),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
+                            Container(
+                              width: 125,
+                              height: 82,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                // FIX 5: Thay withOpacity (deprecated) bằng withAlpha
+                                color: Colors.white.withAlpha(31),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time_outlined,
+                                        size: 14,
+                                        // FIX 5: Thay withOpacity (deprecated) bằng withAlpha
+                                        color: Colors.white.withAlpha(217),
                                       ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "GIỜ",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          letterSpacing: 1,
+                                          fontWeight: FontWeight.w500,
+                                          // FIX 5: Thay withOpacity (deprecated) bằng withAlpha
+                                          color: Colors.white.withAlpha(191),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    appointment['starttime'] != null
+                                        ? "${appointment['starttime'].toString().substring(0, 5)} - ${appointment['endtime'].toString().substring(0, 5)}"
+                                        : "—",
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 20),
-
-                        /// BUTTON
+ 
+                        /// BUTTON — FIX 3: TODO hoàn thiện logic xác nhận tham gia
                         GestureDetector(
                           onTap: () {
-                            print("Xác nhận tham gia lịch hẹn ID: ${appointment['appointmentid']}");
+                            // TODO: Implement xác nhận tham gia lịch hẹn
+                            // Cần gọi API cập nhật trạng thái appointment
+                            print(
+                              "Xác nhận tham gia lịch hẹn ID: ${appointment['appointmentid']}",
+                            );
                           },
                           child: Container(
                             width: double.infinity,
@@ -512,7 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: 24),
-
+ 
               /// CATEGORY TITLE
               const Text(
                 "Tìm chuyên gia",
@@ -523,7 +534,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-
+ 
               /// GRIDVIEW CHUYÊN KHOA
               FutureBuilder<List<Map<String, dynamic>>>(
                 future: _specialtiesFuture,
@@ -536,22 +547,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
-
+ 
                   final specialties = snapshot.data ?? [];
                   if (specialties.isEmpty) {
                     return const Text("Không có dữ liệu chuyên khoa");
                   }
-
+ 
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: specialties.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 1.2,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1.2,
+                        ),
                     itemBuilder: (context, index) {
                       final spec = specialties[index];
                       return _CategoryItem(
@@ -563,7 +575,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: 24),
-
+ 
               /// BLOG TIP
               Container(
                 padding: const EdgeInsets.all(14),
@@ -584,14 +596,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Color(0xFF2F6CD3),
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           Text(
                             "Giữ cơ thể đủ nước trong suốt mùa thu",
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          const SizedBox(height: 6),
+                          SizedBox(height: 6),
                           Text(
-                            "Uống nước giúp duy trì mức năng lượng trong suốt cả ngày.",
+                            "Uông nước giúp duy trì mức năng lượng trong suốt cả ngày.",
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xFF8A94A6),
@@ -616,47 +628,30 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
-
+ 
+      /// FLOAT BUTTON
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2F6CD3),
         onPressed: () {
-      
-          widget.onSearchTap?.call();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const BookingPage()),
+          );
         },
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
-
-  static Widget _infoBox(IconData icon, String title, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.white, size: 16),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white70, fontSize: 11),
-          ),
-          const SizedBox(height: 2),
-          Text(value, style: const TextStyle(color: Colors.white)),
-        ],
-      ),
-    );
-  }
+ 
+  // FIX 4: Xóa _infoBox vì là dead code (không được gọi ở đâu)
 }
-
+ 
 class _CategoryItem extends StatelessWidget {
   final String title;
   final String sub;
-
+ 
   const _CategoryItem(this.title, this.sub);
-
+ 
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -666,7 +661,8 @@ class _CategoryItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            // FIX 5: Thay withOpacity (deprecated) bằng withAlpha
+            color: Colors.black.withAlpha(5),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
