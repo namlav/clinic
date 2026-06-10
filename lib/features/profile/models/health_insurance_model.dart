@@ -85,14 +85,15 @@ class HealthInsurance {
       // Fetch payments data to calculate total invoice amount
       final paymentsResponse = await supabase
           .from('payments')
-          .select('amount')
+          .select('totalamount')
           .limit(100);
 
       double totalInvoiceAmount = 0.0;
       if (paymentsResponse is List) {
         totalInvoiceAmount = (paymentsResponse as List).fold<double>(
           0.0,
-          (sum, payment) => sum + ((payment['amount'] ?? 0) as num).toDouble(),
+          (sum, payment) =>
+              sum + ((payment['totalamount'] ?? 0) as num).toDouble(),
         );
       }
 
