@@ -50,17 +50,26 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
     try {
       if (record.fileUrl.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không có file để tải'), backgroundColor: Colors.orange),
+          const SnackBar(
+            content: Text('Không có file để tải'),
+            backgroundColor: Colors.orange,
+          ),
         );
         return;
       }
 
       if (await canLaunchUrl(Uri.parse(record.fileUrl))) {
-        await launchUrl(Uri.parse(record.fileUrl), mode: LaunchMode.externalApplication);
+        await launchUrl(
+          Uri.parse(record.fileUrl),
+          mode: LaunchMode.externalApplication,
+        );
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không thể mở file'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('Không thể mở file'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -83,7 +92,10 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
       if (file.size > 50 * 1024 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('File quá lớn (max 50MB)'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('File quá lớn (max 50MB)'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
         return;
@@ -91,7 +103,10 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đang tải lên...'), duration: Duration(seconds: 3)),
+          const SnackBar(
+            content: Text('Đang tải lên...'),
+            duration: Duration(seconds: 3),
+          ),
         );
       }
 
@@ -240,7 +255,8 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: const Color(0xFFEFF6FF),
-                backgroundImage: patient?.avatarUrl != null && patient!.avatarUrl.isNotEmpty
+                backgroundImage:
+                    patient?.avatarUrl != null && patient!.avatarUrl.isNotEmpty
                     ? AssetImage(patient!.avatarUrl)
                     : const AssetImage('assets/avatar.jpg'),
               ),
@@ -260,7 +276,10 @@ class _MedicalRecordsScreenState extends State<MedicalRecordsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Patient ID: #${patient?.id ?? ''}',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF6B7280),
+                      ),
                     ),
                   ],
                 ),

@@ -12,11 +12,14 @@ class AppointmentHistoryScreen extends StatefulWidget {
 class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
   late TextEditingController searchController;
   String selectedFilter = 'Tất cả';
+  late Future<List<MedicalAppointment>> _appointmentsFuture;
 
   @override
   void initState() {
     super.initState();
     searchController = TextEditingController();
+    _appointmentsFuture = MedicalAppointment.fetch();
+    searchController.addListener(() => setState(() {}));
   }
 
   @override
@@ -54,7 +57,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
         ],
       ),
       body: FutureBuilder<List<MedicalAppointment>>(
-        future: MedicalAppointment.fetch(),
+        future: _appointmentsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -125,7 +128,10 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
 
   Widget _buildSummaryCard(List<MedicalAppointment> appointments) {
     final nextAppointment = appointments.isNotEmpty
-        ? (appointments.firstWhere((a) => a.isUpcoming, orElse: () => appointments.first))
+        ? (appointments.firstWhere(
+            (a) => a.isUpcoming,
+            orElse: () => appointments.first,
+          ))
         : null;
 
     return Container(
@@ -359,7 +365,6 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
               Expanded(
                 child: TextField(
                   controller: searchController,
-                  onChanged: (_) => setState(() {}),
                   decoration: const InputDecoration(
                     hintText: 'Tìm kiếm bác sĩ, bệnh viện...',
                     hintStyle: TextStyle(
@@ -444,7 +449,8 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       return const Color(0xFFFFF7ED);
     } else if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) {
       return const Color(0xFFEFF6FF);
-    } else if (lowerStatus.contains('complete') || lowerStatus.contains('hoàn')) {
+    } else if (lowerStatus.contains('complete') ||
+        lowerStatus.contains('hoàn')) {
       return const Color(0xFFEFF6EE);
     }
     return const Color(0xFFF3F4F6);
@@ -458,7 +464,8 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       return const Color(0xFFB45309);
     } else if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) {
       return const Color(0xFF2563EB);
-    } else if (lowerStatus.contains('complete') || lowerStatus.contains('hoàn')) {
+    } else if (lowerStatus.contains('complete') ||
+        lowerStatus.contains('hoàn')) {
       return const Color(0xFF047857);
     }
     return const Color(0xFF6B7280);
