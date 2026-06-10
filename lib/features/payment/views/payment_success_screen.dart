@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../booking/views/booking_success_screen.dart';
 import '../../../main.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
@@ -182,7 +181,10 @@ class PaymentSuccessScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (context) => const MainApp()),
+                    MaterialPageRoute(
+                      // initialIndex: 2 → tab Lịch Trình trong bottom nav
+                      builder: (context) => const MainApp(initialIndex: 2),
+                    ),
                     (route) => false,
                   );
                 },
