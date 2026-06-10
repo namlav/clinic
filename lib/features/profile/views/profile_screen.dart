@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/patient_model.dart';
+import '../models/health_metrics_model.dart';
 import 'medical_records_screen.dart';
 import 'vaccination_history_screen.dart';
 import 'health_insurance_screen.dart';
@@ -17,6 +18,14 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  late Future<Patient> _patientFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _patientFuture = Patient.fetch();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
       body: FutureBuilder<Patient>(
-        future: Patient.fetch(),
+        future: _patientFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -75,7 +84,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 _buildProfileCard(patient),
                 const SizedBox(height: 18),
-                _buildHealthOverviewCard(patient),
+                _buildHealthOverviewCard(patient, _buildHealthMetricsFromPatient(patient)),
                 const SizedBox(height: 18),
                 _buildSectionTitle('Quản lý hồ sơ'),
                 const SizedBox(height: 12),
@@ -95,6 +104,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       ),
     );
+  }
+
+  HealthMetrics? _buildHealthMetricsFromPatient(Patient patient) {
+    if (patient.healthHeartRate != null ||
+        patient.healthBloodPressureSys != null ||
+        patient.healthWeight != null) {
+      return HealthMetrics(
+        id: patient.id,
+        heartRate: patient.healthHeartRate ?? 0,
+        bloodPressureSys: (patient.healthBloodPressureSys ?? 0).toString(),
+        bloodPressureDia: (patient.healthBloodPressureDia ?? 0).toString(),
+        weightKg: patient.healthWeight ?? 0.0,
+        weightTrend: patient.healthWeightTrend ?? '',
+      );
+    }
+    return null;
   }
 
   Widget _buildProfileCard(Patient patient) {
@@ -184,7 +209,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildHealthOverviewCard(Patient patient) {
+  Widget _buildHealthOverviewCard(Patient patient, HealthMetrics? metrics) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -210,11 +235,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          _buildHealthStat(patient.heartRate.toString(), 'bpm', 'Nhịp Tim'),
+          _buildHealthStat(
+            (metrics?.heartRate ?? patient.heartRate).toString(),
+            'bpm',
+            'Nhịp Tim',
+          ),
           const SizedBox(height: 16),
-          _buildHealthStat(patient.bloodPressure, '', 'Huyết Áp'),
+          _buildHealthStat(
+            metrics != null
+                ? '${metrics.bloodPressureSys}/${metrics.bloodPressureDia}'
+                : patient.bloodPressure,
+            '',
+            'Huyết Áp',
+          ),
           const SizedBox(height: 16),
-          _buildHealthStat(patient.weight.toString(), 'kg', 'Cân Nặng'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    (metrics?.weightKg ?? patient.weight).toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'kg',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (metrics?.weightTrend != null && metrics!.weightTrend.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: metrics.weightTrend.contains('-')
+                            ? const Color(0xFFEFF6EE)
+                            : const Color(0xFFFFEAEA),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        metrics.weightTrend,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: metrics.weightTrend.contains('-')
+                              ? const Color(0xFF047857)
+                              : const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Cân Nặng',
+                style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              ),
+            ],
+          ),
         ],
       ),
     );

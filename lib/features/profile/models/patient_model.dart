@@ -13,6 +13,11 @@ class Patient {
   final double weight;
   final double height;
   final bool isActive;
+  final int? healthHeartRate;
+  final int? healthBloodPressureSys;
+  final int? healthBloodPressureDia;
+  final double? healthWeight;
+  final String? healthWeightTrend;
 
   Patient({
     required this.id,
@@ -27,6 +32,11 @@ class Patient {
     required this.weight,
     required this.height,
     required this.isActive,
+    this.healthHeartRate,
+    this.healthBloodPressureSys,
+    this.healthBloodPressureDia,
+    this.healthWeight,
+    this.healthWeightTrend,
   });
 
   factory Patient.fromJson(Map<String, dynamic> json) {
@@ -45,6 +55,11 @@ class Patient {
       weight: (json['weightkg'] ?? json['weight_kg'] ?? 0).toDouble(),
       height: (json['height'] ?? 0).toDouble(),
       isActive: json['isactive'] ?? true,
+      healthHeartRate: json['health_heartrate'],
+      healthBloodPressureSys: json['health_bloodpressuresys'],
+      healthBloodPressureDia: json['health_bloodpressuredia'],
+      healthWeight: json['health_weightkg'] != null ? (json['health_weightkg'] as num).toDouble() : null,
+      healthWeightTrend: json['health_weighttrend'],
     );
   }
 
@@ -68,9 +83,63 @@ class Patient {
   static Future<Patient> fetch() async {
     try {
       final supabase = Supabase.instance.client;
-      final response = await supabase.from('users').select('*').limit(1);
-      final data = (response as List).first as Map<String, dynamic>;
-      return Patient.fromJson(data);
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // Fetch user data with healthmetrics join
+      var response = await supabase
+          .from('users')
+          .select('*, healthmetrics(*)')
+          .eq('authid', userId)
+          .maybeSingle();
+
+      if (response == null) {
+        response = await supabase
+            .from('users')
+            .select('*, healthmetrics(*)')
+            .eq('userid', userId)
+            .maybeSingle();
+      }
+
+      if (response == null) {
+        throw Exception('User not found');
+      }
+
+      // Extract healthmetrics from response if available
+      var healthMetricsData = response['healthmetrics'];
+
+      // Fallback: if join didn't return healthmetrics, fetch directly
+      if (healthMetricsData == null || (healthMetricsData is List && healthMetricsData.isEmpty)) {
+        try {
+          final userIdInt = int.tryParse(userId);
+          if (userIdInt != null) {
+            final metricsResponse = await supabase
+                .from('healthmetrics')
+                .select()
+                .eq('userid', userIdInt)
+                .maybeSingle();
+            if (metricsResponse != null) {
+              healthMetricsData = [metricsResponse];
+            }
+          }
+        } catch (_) {
+          // Silent fallback
+        }
+      }
+
+      if (healthMetricsData is List && healthMetricsData.isNotEmpty) {
+        final metrics = healthMetricsData[0];
+        response['health_heartrate'] = metrics['heartrate'];
+        response['health_bloodpressuresys'] = metrics['bloodpressuresys'];
+        response['health_bloodpressuredia'] = metrics['bloodpressuredia'];
+        response['health_weightkg'] = metrics['weightkg'];
+        response['health_weighttrend'] = metrics['weighttrend'];
+      }
+
+      return Patient.fromJson(response as Map<String, dynamic>);
     } catch (e) {
       throw Exception('Lỗi lấy thông tin bệnh nhân: $e');
     }

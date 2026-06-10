@@ -99,7 +99,16 @@ class NotificationSettings {
   static Future<List<NotificationSettings>> fetch() async {
     try {
       final supabase = Supabase.instance.client;
-      final response = await supabase.from('notificationsettings').select();
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) {
+        return _getDefaultSettings();
+      }
+
+      final response = await supabase
+          .from('notificationsettings')
+          .select()
+          .eq('userid', userId);
 
       if ((response as List).isEmpty) {
         return _getDefaultSettings();
@@ -169,9 +178,21 @@ class NotificationSettings {
   static Future<void> update(String settingId, Map<String, dynamic> updates) async {
     try {
       final supabase = Supabase.instance.client;
-      await supabase.from('notificationsettings').update(updates).eq('id', settingId);
+      final userId = supabase.auth.currentUser?.id;
+
+      if (userId == null) throw Exception('User not authenticated');
+
+      // UPSERT: Insert nếu không có, Update nếu có (tối ưu cho user mới)
+      await supabase.from('notificationsettings').upsert(
+        {
+          'settingid': settingId,
+          'userid': userId,
+          ...updates,
+        },
+        onConflict: 'settingid',
+      );
     } catch (e) {
-      // Silent fail for UI responsiveness - settings still work locally
+      throw Exception('Lỗi cập nhật thông báo: $e');
     }
   }
 }

@@ -34,9 +34,19 @@ class _NotificationSettingsScreenState
       'healthtips': newValue,
       'appupdates': newValue,
       'quietmode': newValue,
-    }).onError((error, stackTrace) {
+    }).then((_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Lỗi cập nhật: $error')),
+        SnackBar(
+          content: Text(newValue ? 'Đã bật thông báo' : 'Đã tắt thông báo'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }).catchError((error) {
+      setState(() {
+        toggleStates[id] = !newValue;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi cập nhật: $error'), backgroundColor: Colors.red),
       );
     });
   }
