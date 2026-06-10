@@ -9,7 +9,8 @@ class ScheduleListScreen extends StatefulWidget {
   State<ScheduleListScreen> createState() => _ScheduleListScreenState();
 }
 
-class _ScheduleListScreenState extends State<ScheduleListScreen> with SingleTickerProviderStateMixin {
+class _ScheduleListScreenState extends State<ScheduleListScreen>
+    with SingleTickerProviderStateMixin {
   final supabase = Supabase.instance.client;
   List<Map<String, dynamic>> upcomingAppointments = [];
   List<Map<String, dynamic>> completedAppointments = [];
@@ -214,7 +215,8 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> with SingleTick
 
         // Tính xem đã đến giờ hẹn chưa
         final rawDate = appointment['appointmentdate'] as String? ?? '';
-        final rawStart = appointment['starttime']?.toString().split('.').first ?? '';
+        final rawStart =
+            appointment['starttime']?.toString().split('.').first ?? '';
         bool canComplete = false;
         try {
           final appointmentStart = DateTime.parse('$rawDate $rawStart');
@@ -308,11 +310,7 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> with SingleTick
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: 80,
-                  ),
+                  const Icon(Icons.check_circle, color: Colors.green, size: 80),
                   const SizedBox(height: 16),
                   const Text(
                     'Hoàn tất lịch hẹn!',
@@ -326,10 +324,7 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> with SingleTick
                   Text(
                     'Cảm ơn bạn đã sử dụng dịch vụ. Chúc bạn nhiều sức khỏe!',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 24),
                   SizedBox(
@@ -420,7 +415,7 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> with SingleTick
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Khoa tim mạch',
+                      specialty,
                       style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
                   ],
@@ -497,9 +492,8 @@ class _ScheduleListScreenState extends State<ScheduleListScreen> with SingleTick
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => CancelAppointmentScreen(
-                        appointmentId: appointmentId,
-                      ),
+                      builder: (context) =>
+                          CancelAppointmentScreen(appointmentId: appointmentId),
                     ),
                   ).then((_) => _loadAppointments());
                 },
