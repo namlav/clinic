@@ -1,9 +1,11 @@
+import 'package:clinic/features/home/views/home_screen.dart';
+import 'package:clinic/main.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'create_new_password_screen.dart';
-import '../../home/views/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,15 +18,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final supabase = Supabase.instance.client;
+
   bool _isObscured = true;
   bool _isLoading = false;
-  final supabase = Supabase.instance.client;
 
   @override
   void initState() {
     super.initState();
     supabase.auth.onAuthStateChange.listen((data) {
       if (data.event == AuthChangeEvent.passwordRecovery) {
+        if (!mounted) return;
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -33,6 +37,68 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     });
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    try {
+      setState(() => _isLoading = true);
+
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId:
+            '129113365482-afq2lrafnvunih6j9atnr4e9clh5ns0i.apps.googleusercontent.com',
+      );
+
+      final googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final googleAuth = await googleUser.authentication;
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+
+      if (idToken == null) throw 'Không tìm thấy ID Token từ Google';
+
+      final AuthResponse response = await supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+
+      if (response.user != null) {
+        // 3. VÌ ĐÃ XÓA TRIGGER: Ta cần tự lưu user vào bảng public.users nếu là lần đầu
+        await supabase.from('users').upsert({
+          'authid': response.user!.id,
+          'fullname':
+              response.user!.userMetadata?['full_name'] ??
+              googleUser.displayName,
+          'email': response.user!.email,
+          'avatarurl':
+              response.user!.userMetadata?['avatar_url'] ?? googleUser.photoUrl,
+          'isactive': true,
+          'joineddate': DateTime.now().toIso8601String(),
+        }, onConflict: 'authid');
+
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MainApp(),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Lỗi Google Sign-In: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _login() async {
@@ -48,7 +114,9 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(
+              builder: (context) => const MainApp(),
+            ),
           );
         }
       } on AuthException catch (e) {
@@ -100,7 +168,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontSize: 13,
                       color: Colors.grey,
                       letterSpacing: 2,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -129,18 +196,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     _buildLabel("Email"),
                     _buildTextField(
-                      controller: _emailController,
-                      hint: "name@email.com",
-                      icon: Icons.email_outlined,
-                      validator: (val) {
-                        if (val == null || val.isEmpty)
-                          return "Vui lòng nhập email";
-                        if (!RegExp(
-                          r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                        ).hasMatch(val))
-                          return "Email không hợp lệ";
-                        return null;
-                      },
+                      _emailController,
+                      "name@email.com",
+                      Icons.email_outlined,
                     ),
                     const SizedBox(height: 24),
                     Row(
@@ -167,16 +225,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                     _buildTextField(
-                      controller: _passwordController,
-                      hint: "********",
-                      icon: Icons.lock_outline,
+                      _passwordController,
+                      "********",
+                      Icons.lock_outline,
                       isPass: true,
-                      isObscured: _isObscured,
-                      toggleVisibility: () =>
-                          setState(() => _isObscured = !_isObscured),
-                      validator: (val) => (val == null || val.isEmpty)
-                          ? "Vui lòng nhập mật khẩu"
-                          : null,
+                      toggle: () => setState(() => _isObscured = !_isObscured),
                     ),
                     const SizedBox(height: 32),
 
@@ -208,7 +261,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Divider
                     const Row(
                       children: [
                         Expanded(child: Divider()),
@@ -239,20 +291,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          // Thêm logic đăng nhập Google của bạn ở đây
-                        },
+                        onPressed: _isLoading ? null : _handleGoogleSignIn,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Image.network(
                               'https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg',
-                              height: 24,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  Image.network(
-                                    'https://pngimg.com/uploads/google/google_PNG19635.png',
-                                    height: 24,
-                                  ),
+                              height: 22,
+                              errorBuilder: (c, e, s) => const Icon(
+                                Icons.g_mobiledata,
+                                color: Colors.red,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             const Text(
@@ -318,31 +367,26 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint,
+    IconData icon, {
     bool isPass = false,
-    bool isObscured = false,
-    VoidCallback? toggleVisibility,
-    String? Function(String?)? validator,
+    VoidCallback? toggle,
   }) {
     return TextFormField(
       controller: controller,
-      obscureText: isPass ? isObscured : false,
-      validator: validator,
+      obscureText: isPass ? _isObscured : false,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
         prefixIcon: Icon(icon, color: Colors.grey, size: 20),
         suffixIcon: isPass
             ? IconButton(
                 icon: Icon(
-                  isObscured ? Icons.visibility_off : Icons.visibility,
+                  _isObscured ? Icons.visibility_off : Icons.visibility,
                   size: 20,
-                  color: Colors.grey,
                 ),
-                onPressed: toggleVisibility,
+                onPressed: toggle,
               )
             : null,
         filled: true,
