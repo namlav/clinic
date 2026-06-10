@@ -5,14 +5,14 @@ import '../../../widgets/bottom_navigation_bar_widget.dart';
 import '../views/home_screen.dart';
 import '../../appointment/views/schedule_list_screen.dart';
 import '../../profile/views/profile_screen.dart';
-
+ 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
-
+ 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
 }
-
+ 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   
@@ -21,29 +21,26 @@ class _SearchScreenState extends State<SearchScreen> {
   Map<int, String?> _doctorNextAppointments = {}; 
   bool _isLoading = false;
   String _selectedSpecialty = "Tất cả";
-
-  final List<Map<String, dynamic>> _categories = [
+ 
+  // FIX 2: Bỏ hardcode, sẽ load từ DB
+  List<Map<String, dynamic>> _categories = [
     {"name": "Tất cả", "icon": Icons.grid_view_rounded},
-    {"name": "Tim mạch", "icon": Icons.favorite_rounded},
-    {"name": "Nha khoa", "icon": Icons.clean_hands_rounded},
-    {"name": "Da liễu", "icon": Icons.face_rounded},
-    {"name": "Mắt", "icon": Icons.visibility_rounded},
   ];
-
+ 
   @override
   void initState() {
     super.initState();
     _fetchDoctorsAndSchedules();
   }
-
+ 
   Future<void> _fetchDoctorsAndSchedules() async {
     setState(() {
       _isLoading = true;
     });
-
+ 
     try {
       final client = Supabase.instance.client;
-
+ 
       final response = await client.from('doctors').select('''
         *,
         specialties (
@@ -52,38 +49,56 @@ class _SearchScreenState extends State<SearchScreen> {
       ''');
       
       _allDoctors = List<Map<String, dynamic>>.from(response);
-
+ 
+      // FIX 2: Load tất cả chuyên khoa từ DB để hiển thị filter
+      final specialtiesResponse = await client
+          .from('specialties')
+          .select('specialtyname')
+          .order('specialtyname', ascending: true);
+ 
+      final List<Map<String, dynamic>> dbSpecialties =
+          List<Map<String, dynamic>>.from(specialtiesResponse);
+ 
+      final List<Map<String, dynamic>> categoryList = [
+        {"name": "Tất cả", "icon": Icons.grid_view_rounded},
+        ...dbSpecialties.map((s) => {
+          "name": s['specialtyname'] ?? "",
+          "icon": Icons.local_hospital_rounded,
+        }),
+      ];
+ 
       final appointmentResponse = await client
           .from('appointments')
           .select('doctorid, appointmentdate, starttime')
           .eq('status', 'Pending')
           .order('appointmentdate', ascending: true)
           .order('starttime', ascending: true);
-
+ 
       final appointments = List<Map<String, dynamic>>.from(appointmentResponse);
       Map<int, String?> tempNextAppoints = {};
-
+ 
       for (var doc in _allDoctors) {
         int docId = doc['doctorid'];
         final nextApp = appointments.firstWhere(
           (app) => app['doctorid'] == docId,
           orElse: () => {},
         );
-
+ 
         if (nextApp.isNotEmpty) {
           String dateStr = nextApp['appointmentdate'].toString();
           String timeStr = nextApp['starttime'].toString().substring(0, 5);
           
           List<String> dateParts = dateStr.split('-');
           String formattedDate = "${dateParts[2]}/${dateParts[1]}/${dateParts[0]}";
-
+ 
           tempNextAppoints[docId] = "Lịch tiếp theo: $timeStr ($formattedDate)";
         } else {
           tempNextAppoints[docId] = null;
         }
       }
-
+ 
       setState(() {
+        _categories = categoryList;
         _doctorNextAppointments = tempNextAppoints;
         _filteredDoctors = _allDoctors;
         _isLoading = false;
@@ -94,33 +109,34 @@ class _SearchScreenState extends State<SearchScreen> {
       });
     }
   }
-
+ 
   void _applyFilterAndSearch() {
     String query = _searchController.text.trim().toLowerCase();
     List<Map<String, dynamic>> results = _allDoctors;
-
+ 
+    // FIX 3: Đổi .contains() → so sánh == chính xác để tránh lọc sai
     if (_selectedSpecialty != "Tất cả") {
       results = results.where((doc) {
         final specName = doc['specialties']?['specialtyname']?.toString() ?? "";
-        return specName.contains(_selectedSpecialty);
+        return specName == _selectedSpecialty;
       }).toList();
     }
-
+ 
     if (query.isNotEmpty) {
       results = results.where((doc) {
         final fullname = (doc['fullname'] ?? "").toString().toLowerCase();
         return fullname.contains(query);
       }).toList();
     }
-
+ 
     setState(() {
       _filteredDoctors = results;
     });
   }
-
+ 
   void _handleNavigation(int index) {
     if (index == 1) return; 
-
+ 
     if (index == 0) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } else if (index == 2) {
@@ -129,7 +145,7 @@ class _SearchScreenState extends State<SearchScreen> {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
     }
   }
-
+ 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -174,7 +190,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
+ 
             /// SEARCH BAR & FILTER BUTTON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -213,8 +229,8 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
-            /// CATEGORIES ROW
+ 
+            /// CATEGORIES ROW — FIX 2: Hiển thị tất cả khoa từ DB
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -253,7 +269,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            cat['icon'],
+                            cat['icon'] as IconData,
                             color: isSelected ? const Color(0xFF0284C7) : const Color(0xFF64748B),
                             size: 26,
                           ),
@@ -266,7 +282,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               color: isSelected ? const Color(0xFF0284C7) : const Color(0xFF1E293B),
                             ),
                             textAlign: TextAlign.center,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -277,7 +293,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             const SizedBox(height: 24),
-
+ 
             /// DOCTORS LIST
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
@@ -300,7 +316,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             final int docId = doc['doctorid'] ?? 0;
                             final String specialtyName = doc['specialties']?['specialtyname'] ?? (doc['title'] ?? "Chuyên khoa");
                             final String? nextAppointmentStr = _doctorNextAppointments[docId];
-
+ 
                             return _buildDoctorCard(
                               doc: doc,
                               specialtyName: specialtyName,
@@ -312,13 +328,15 @@ class _SearchScreenState extends State<SearchScreen> {
           ],
         ),
       ),
+ 
+      // FIX 1: Giữ lại đúng 1 bottomNavigationBar duy nhất
       bottomNavigationBar: BottomNavigationBarApp(
         initialIndex: 1, 
         onItemTapped: _handleNavigation,
       ),
     );
   }
-
+ 
   Widget _buildDoctorCard({
     required Map<String, dynamic> doc,
     required String specialtyName,
@@ -327,7 +345,7 @@ class _SearchScreenState extends State<SearchScreen> {
     final String fullname = doc['fullname'] ?? "Bác sĩ"; 
     final double rating = (doc['rating'] ?? 5.0).toDouble();
     final String avatarUrl = doc['avatarurl'] ?? "";
-
+ 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
@@ -395,7 +413,6 @@ class _SearchScreenState extends State<SearchScreen> {
                     const SizedBox(width: 12),
                     const Icon(Icons.circle, color: Colors.green, size: 8),
                     const SizedBox(width: 4),
-                    // ĐÃ FIX: Đổi FontWeight sang cấu trúc hằng số chuẩn w500, bóc tách từ khóa const cha để sạch lỗi
                     Text(
                       "Sẵn sàng",
                       style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w500),

@@ -4,25 +4,26 @@ import 'search_screen.dart';
 import '../../../widgets/fade_page_route.dart';
 import 'package:clinic/features/appointment/views/schedule_list_screen.dart';
 import 'package:clinic/features/booking/views/booking_screen.dart';
- 
+import 'package:clinic/widgets/bottom_navigation_bar_widget.dart';
+import 'package:clinic/features/profile/views/profile_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onSearchTap;
- 
+
   const HomeScreen({super.key, this.onSearchTap});
- 
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
- 
 class _HomeScreenState extends State<HomeScreen> {
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
- 
+
   late Future<Map<String, dynamic>?> _userProfileFuture;
   late Future<Map<String, dynamic>?> _priorityAppointmentFuture;
   late Future<List<Map<String, dynamic>>> _specialtiesFuture;
- 
+
   @override
   void initState() {
     super.initState();
@@ -30,33 +31,33 @@ class _HomeScreenState extends State<HomeScreen> {
     _priorityAppointmentFuture = _fetchPriorityAppointment();
     _specialtiesFuture = _fetchSpecialties();
   }
- 
+
   //Lấy thông tin cá nhân của User hiện tại từ Supabase
   Future<Map<String, dynamic>?> _fetchUserProfile() async {
     try {
       final authUser = Supabase.instance.client.auth.currentUser;
- 
+
       if (authUser == null) return null;
- 
+
       final response = await Supabase.instance.client
           .from('users')
           .select('fullname, avatarurl')
           .eq('authid', authUser.id)
           .maybeSingle();
- 
+
       return response;
     } catch (e) {
       return null;
     }
   }
- 
+
   //  Lấy cuộc hẹn ưu tiên sắp diễn ra
   Future<Map<String, dynamic>?> _fetchPriorityAppointment() async {
     try {
       // FIX 1: Thêm filter theo user hiện tại
       final authUser = Supabase.instance.client.auth.currentUser;
       if (authUser == null) return null;
- 
+
       final response = await Supabase.instance.client
           .from('appointments')
           .select(
@@ -72,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return null;
     }
   }
- 
+
   // Lấy danh sách chuyên khoa
   Future<List<Map<String, dynamic>>> _fetchSpecialties() async {
     try {
@@ -85,10 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
       return [];
     }
   }
- 
+
   // FIX 2: Bỏ pickDate và pickTime vì không liên kết với appointment thật,
   // tránh gây hiểu lầm cho người dùng
- 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,14 +101,14 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 12),
- 
+
               FutureBuilder<Map<String, dynamic>?>(
                 future: _userProfileFuture,
                 builder: (context, userSnapshot) {
                   final userData = userSnapshot.data;
                   final String userAvatar = userData?['avatarurl'] ?? "";
                   final String userFullname = userData?['fullname'] ?? "User";
- 
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -135,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               const SizedBox(width: 12),
- 
+
                               /// LOGO TEXT
                               const Text(
                                 "SereneHealth",
@@ -148,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
- 
+
                           /// SEARCH
                           IconButton(
                             onPressed: () {
@@ -172,7 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                       const SizedBox(height: 20),
- 
+
                       /// WELCOME SECTION
                       const Text(
                         "Chào mừng,",
@@ -199,9 +200,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
- 
+
               const SizedBox(height: 14),
- 
+
               SizedBox(
                 width: 295,
                 child: const Text(
@@ -216,7 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 22),
- 
+
               /// TITLE
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -256,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
               const SizedBox(height: 14),
- 
+
               /// APPOINTMENT CARD
               FutureBuilder<Map<String, dynamic>?>(
                 future: _priorityAppointmentFuture,
@@ -274,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
- 
+
                   final appointment = snapshot.data;
                   if (appointment == null) {
                     return Container(
@@ -296,7 +297,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
- 
+
                   final doctor =
                       appointment['doctors'] as Map<String, dynamic>?;
                   final String doctorName =
@@ -304,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   final String specialtyName =
                       doctor?['title'] ?? "Khoa Tổng quát";
                   final String avatarUrl = doctor?['avatarurl'] ?? "";
- 
+
                   return Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -382,7 +383,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 18),
- 
+
                         /// DATE TIME SHOW — FIX 2: Bỏ GestureDetector, chỉ hiển thị thông tin
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -488,7 +489,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
- 
+
                         /// BUTTON — FIX 3: TODO hoàn thiện logic xác nhận tham gia
                         GestureDetector(
                           onTap: () {
@@ -523,7 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: 24),
- 
+
               /// CATEGORY TITLE
               const Text(
                 "Tìm chuyên gia",
@@ -534,7 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 12),
- 
+
               /// GRIDVIEW CHUYÊN KHOA
               FutureBuilder<List<Map<String, dynamic>>>(
                 future: _specialtiesFuture,
@@ -547,12 +548,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   }
- 
+
                   final specialties = snapshot.data ?? [];
                   if (specialties.isEmpty) {
                     return const Text("Không có dữ liệu chuyên khoa");
                   }
- 
+
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -575,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: 24),
- 
+
               /// BLOG TIP
               Container(
                 padding: const EdgeInsets.all(14),
@@ -628,7 +629,30 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
- 
+
+      bottomNavigationBar: BottomNavigationBarApp(
+        initialIndex: 0,
+        onItemTapped: (index) {
+          if (index == 0) return;
+          if (index == 1) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
+            );
+          } else if (index == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const ScheduleListScreen()),
+            );
+          } else if (index == 3) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+            );
+          }
+        },
+      ),
+
       /// FLOAT BUTTON
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2F6CD3),
@@ -642,16 +666,14 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
- 
-  // FIX 4: Xóa _infoBox vì là dead code (không được gọi ở đâu)
 }
- 
+
 class _CategoryItem extends StatelessWidget {
   final String title;
   final String sub;
- 
+
   const _CategoryItem(this.title, this.sub);
- 
+
   @override
   Widget build(BuildContext context) {
     return Container(
