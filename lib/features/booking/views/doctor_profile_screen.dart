@@ -14,28 +14,85 @@ class DoctorProfilePage extends StatefulWidget {
 }
 
 class _DoctorProfilePageState extends State<DoctorProfilePage> {
-  int selectedDay = 17;
-  int selectedTimeIndex = 1;
-
-  final List<Map<String, dynamic>> timeSlots = [
-    {'time': '09:00', 'disabled': false},
-    {'time': '10:30', 'disabled': false},
-    {'time': '11:15', 'disabled': false},
-    {'time': '01:45', 'disabled': false},
-    {'time': '03:00', 'disabled': false},
-    {'time': '04:30', 'disabled': true},
-    {'time': '05:15', 'disabled': false},
-  ];
+  // Quản lý ngày động
+  late DateTime _currentMonthView;
+  late DateTime _today;
+  late DateTime _selectedDate;
+  late DateTime _maxDate; // #1 Thêm biến quản lý ngày tối đa
+  
+  // Quản lý giờ động
+  int selectedTimeIndex = 0;
+  List<Map<String, dynamic>> dynamicTimeSlots = [];
 
   final List<String> weekDays = [
-    'TH\n2',
-    'TH\n3',
-    'TH\n4',
-    'TH\n5',
-    'TH\n6',
-    'TH\n7',
-    'C\nN',
+    'TH\n2', 'TH\n3', 'TH\n4', 'TH\n5', 'TH\n6', 'TH\n7', 'C\nN',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // #2 Cấu hình thời gian khởi tạo trong initState()
+    _today = DateTime.now();
+    _maxDate = DateTime(
+      _today.year,
+      _today.month + 3,
+      _today.day,
+    );
+    _currentMonthView = DateTime(
+      _today.year,
+      _today.month,
+      1,
+    );
+    _selectedDate = _today; 
+    
+    _generateMedicalTimeSlots();
+  }
+
+  // Tự động sinh khung giờ khám: Sáng (7h-10h30), Chiều (13h-16h30) cách nhau 30 phút
+  void _generateMedicalTimeSlots() {
+    dynamicTimeSlots.clear();
+    
+    // Ca Sáng: 07:00 -> 10:30
+    double morningStart = 7.0;
+    double morningEnd = 10.5; 
+    for (double time = morningStart; time <= morningEnd; time += 0.5) {
+      dynamicTimeSlots.add({
+        'time': _formatDoubleToTime(time),
+        'disabled': false,
+      });
+    }
+
+    // Ca Chiều: 13:00 -> 16:30
+    double afternoonStart = 13.0;
+    double afternoonEnd = 16.5; 
+    for (double time = afternoonStart; time <= afternoonEnd; time += 0.5) {
+      dynamicTimeSlots.add({
+        'time': _formatDoubleToTime(time),
+        'disabled': false,
+      });
+    }
+  }
+
+  String _formatDoubleToTime(double value) {
+    int hours = value.toInt();
+    int minutes = ((value - hours) * 60).toInt();
+    return "${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}";
+  }
+
+  // Logic chuyển tháng trên lịch (Giới hạn trong khoảng maxDate đã tính)
+  void _changeMonth(int increment) {
+    setState(() {
+      DateTime newMonth = DateTime(_currentMonthView.year, _currentMonthView.month + increment, 1);
+      DateTime maxLimitMonth = DateTime(_maxDate.year, _maxDate.month, 1);
+      DateTime minLimitMonth = DateTime(_today.year, _today.month, 1);
+
+      if ((newMonth.isBefore(maxLimitMonth) || newMonth.isAtSameMomentAs(maxLimitMonth)) &&
+          (newMonth.isAfter(minLimitMonth) || newMonth.isAtSameMomentAs(minLimitMonth))) {
+        _currentMonthView = newMonth;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +112,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   children: [
                     const SizedBox(height: 18),
 
-                    /// PROFILE CARD
+                    /// PROFILE CARD (Nơi chứa thông tin chuyên khoa bác sĩ)
                     _buildProfileCard(),
 
                     const SizedBox(height: 30),
@@ -79,7 +136,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               ),
             ),
 
-            /// BUTTON XÁC NHẬN 
+            /// BUTTON XÁC NHẬN
             _buildConfirmButton(),
           ],
         ),
@@ -122,7 +179,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
 
   Widget _buildProfileCard() {
     final String fullname = widget.doctorData['fullname'] ?? "Bác sĩ";
-    final String title = widget.doctorData['title'] ?? "Chuyên gia y tế";
+    final String specialty =widget.doctorData['specialties']?['specialtyname']?? "Chuyên khoa";
     final String rating = (widget.doctorData['rating'] ?? 5.0).toString();
     final int reviewCount = widget.doctorData['reviewcount'] ?? 0;
     final int experienceYears = widget.doctorData['experienceyears'] ?? 5;
@@ -144,7 +201,6 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
       ),
       child: Column(
         children: [
-          /// AVATAR
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -193,10 +249,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
-          /// NAME
           Text(
             fullname,
             textAlign: TextAlign.center,
@@ -207,10 +260,9 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               color: Color(0xFF1A1F36),
             ),
           ),
-
           const SizedBox(height: 10),
-
-          /// SPECIALTY
+          
+          /// ĐÃ ĐỔ CHUYÊN KHOA ĐỘNG TẠI ĐÂY
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -221,7 +273,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               ),
               const SizedBox(width: 6),
               Text(
-                title,
+                (specialty),// 
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
@@ -230,10 +282,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
-          /// RATING + EXPERIENCE
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -323,6 +372,21 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   }
 
   Widget _buildCalendarSection() {
+    int daysInMonth = DateUtils.getDaysInMonth(_currentMonthView.year, _currentMonthView.month);
+    List<DateTime> validDays = [];
+    
+    for (int i = 1; i <= daysInMonth; i++) {
+      DateTime day = DateTime(_currentMonthView.year, _currentMonthView.month, i);
+      
+      // #3 Kiểm tra ràng buộc: Ngày phải từ hôm nay trở đi và trước ngày tối đa (3 tháng sau)
+      if (
+        day.isAfter(_today.subtract(const Duration(days: 1))) &&
+        day.isBefore(_maxDate.add(const Duration(days: 1)))
+      ) {
+        validDays.add(day);
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -350,37 +414,34 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           ),
           child: Column(
             children: [
-              /// HEADER
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Tháng 12/2026",
-                    style: TextStyle(
+                  Text(
+                    "Tháng ${_currentMonthView.month}/${_currentMonthView.year}",
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1F36),
                     ),
                   ),
                   Row(
-                    children: const [
-                      Icon(
-                        Icons.chevron_left,
-                        color: Color(0xFFB0B8C5),
+                    children: [
+                      GestureDetector(
+                        onTap: () => _changeMonth(-1),
+                        child: const Icon(Icons.chevron_left, color: Color(0xFFB0B8C5)),
                       ),
-                      SizedBox(width: 4),
-                      Icon(
-                        Icons.chevron_right,
-                        color: Color(0xFFB0B8C5),
+                      const SizedBox(width: 14),
+                      GestureDetector(
+                        onTap: () => _changeMonth(1),
+                        child: const Icon(Icons.chevron_right, color: Color(0xFFB0B8C5)),
                       ),
                     ],
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
 
-              /// WEEK
               Row(
                 children: weekDays.map((day) {
                   return Expanded(
@@ -397,47 +458,48 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   );
                 }).toList(),
               ),
-
               const SizedBox(height: 16),
 
-              /// DAYS
-              Wrap(
-                spacing: 10,
-                runSpacing: 12,
-                children: List.generate(
-                  17,
-                  (index) {
-                    int day = index + 8;
-                    bool isSelected = day == selectedDay;
+              validDays.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text("Không có lịch trống trong tháng này", style: TextStyle(color: Colors.grey)),
+                    )
+                  : Wrap(
+                      spacing: 10,
+                      runSpacing: 12,
+                      children: validDays.map((dateTime) {
+                        bool isSelected = dateTime.year == _selectedDate.year &&
+                            dateTime.month == _selectedDate.month &&
+                            dateTime.day == _selectedDate.day;
 
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedDay = day;
-                        });
-                      },
-                      child: Container(
-                        width: 36,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF0057C2) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "$day",
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected ? Colors.white : const Color(0xFF1A1F36),
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedDate = dateTime;
+                            });
+                          },
+                          child: Container(
+                            width: 36,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: isSelected ? const Color(0xFF0057C2) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Center(
+                              child: Text(
+                                "${dateTime.day}",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSelected ? Colors.white : const Color(0xFF1A1F36),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                        );
+                      }).toList(),
+                    ),
             ],
           ),
         ),
@@ -461,7 +523,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: timeSlots.length,
+          itemCount: dynamicTimeSlots.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             childAspectRatio: 2.7,
@@ -469,7 +531,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
             mainAxisSpacing: 14,
           ),
           itemBuilder: (context, index) {
-            bool disabled = timeSlots[index]['disabled'];
+            bool disabled = dynamicTimeSlots[index]['disabled'];
             bool isSelected = selectedTimeIndex == index;
 
             return GestureDetector(
@@ -500,7 +562,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                 ),
                 child: Center(
                   child: Text(
-                    timeSlots[index]['time'],
+                    dynamicTimeSlots[index]['time'],
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -528,22 +590,38 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
         height: 62,
         child: ElevatedButton(
           onPressed: () async {
-            final String selectedTime = timeSlots[selectedTimeIndex]['time'];
-            final String appointmentDate = "2026-12-$selectedDay";
+            if (dynamicTimeSlots.isEmpty) return;
+
+            final String selectedTime = dynamicTimeSlots[selectedTimeIndex]['time'];
             
+            // #4 Sửa và tính toán kết thúc thời gian biểu tự động (+30 phút)
+            final parts = selectedTime.split(':');
+            DateTime startDateTime = DateTime(
+              2026,
+              1,
+              1,
+              int.parse(parts[0]),
+              int.parse(parts[1]),
+            );
+            DateTime endDateTime = startDateTime.add(const Duration(minutes: 30));
+            final String endTime =
+                "${endDateTime.hour.toString().padLeft(2, '0')}:"
+                "${endDateTime.minute.toString().padLeft(2, '0')}:00";
+
+            final String appointmentDate = "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
             final int doctorId = widget.doctorData['doctorid'] ?? 0;
 
             try {
+              // #5 Lưu trữ bản ghi lên hệ thống Supabase với starttime và endtime động
               await Supabase.instance.client.from('appointments').insert({
                 'doctorid': doctorId,
                 'appointmentdate': appointmentDate,
                 'starttime': "$selectedTime:00", 
-                'endtime': "$selectedTime:00",
+                'endtime': endTime,
                 'status': 'Pending',           
                 'createdat': DateTime.now().toIso8601String(),
               });
 
-              // 4. Thông báo và tự động Pop điều hướng quay lại
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Đặt lịch hẹn khám thành công!")),
