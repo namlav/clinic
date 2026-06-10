@@ -4,10 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class DoctorProfilePage extends StatefulWidget {
   final Map<String, dynamic> doctorData;
 
-  const DoctorProfilePage({
-    super.key,
-    required this.doctorData,
-  });
+  const DoctorProfilePage({super.key, required this.doctorData});
 
   @override
   State<DoctorProfilePage> createState() => _DoctorProfilePageState();
@@ -16,6 +13,66 @@ class DoctorProfilePage extends StatefulWidget {
 class _DoctorProfilePageState extends State<DoctorProfilePage> {
   int selectedDay = 17;
   int selectedTimeIndex = 1;
+  bool _isActive = true; // Mặc định là cho phép
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserStatus();
+  }
+
+  Future<void> _checkUserStatus() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final data = await Supabase.instance.client
+            .from('users')
+            .select('isactive')
+            .eq('authid', user.id)
+            .single();
+
+        if (mounted) {
+          setState(() {
+            _isActive = data['isactive'] ?? true;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi kiểm tra trạng thái user: $e");
+    }
+  }
+
+  void _showRestrictedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_person, color: Colors.red),
+            SizedBox(width: 10),
+            Text("Tài khoản bị hạn chế"),
+          ],
+        ),
+        content: const Text(
+          "Tài khoản của bạn đã bị hạn chế chức năng đặt lịch khám do vi phạm quy định hoặc chưa hoàn thiện hồ sơ. Vui lòng liên hệ hỗ trợ để biết thêm chi tiết.",
+          style: TextStyle(fontSize: 15, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "ĐÃ HIỂU",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0057C2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   final List<Map<String, dynamic>> timeSlots = [
     {'time': '09:00', 'disabled': false},
@@ -79,7 +136,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               ),
             ),
 
-            /// BUTTON XÁC NHẬN 
+            /// BUTTON XÁC NHẬN
             _buildConfirmButton(),
           ],
         ),
@@ -110,11 +167,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               letterSpacing: -0.2,
             ),
           ),
-          const Icon(
-            Icons.search,
-            size: 23,
-            color: Color(0xFF0057C2),
-          ),
+          const Icon(Icons.search, size: 23, color: Color(0xFF0057C2)),
         ],
       ),
     );
@@ -126,7 +179,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
     final String rating = (widget.doctorData['rating'] ?? 5.0).toString();
     final int reviewCount = widget.doctorData['reviewcount'] ?? 0;
     final int experienceYears = widget.doctorData['experienceyears'] ?? 5;
-    final String avatarUrl = widget.doctorData['avatarurl'] ?? "assets/images/ava1.jpg";
+    final String avatarUrl =
+        widget.doctorData['avatarurl'] ?? "assets/images/ava1.jpg";
 
     return Container(
       width: double.infinity,
@@ -156,12 +210,13 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                         width: 120,
                         height: 120,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Image.asset(
-                          "assets/images/ava1.jpg",
-                          width: 120,
-                          height: 120,
-                          fit: BoxFit.cover,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset(
+                              "assets/images/ava1.jpg",
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            ),
                       )
                     : Image.asset(
                         "assets/images/ava1.jpg",
@@ -179,10 +234,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   decoration: BoxDecoration(
                     color: const Color(0xFF0057C2),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 3,
-                    ),
+                    border: Border.all(color: Colors.white, width: 3),
                   ),
                   child: const Icon(
                     Icons.verified,
@@ -238,18 +290,17 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFDDEEFF),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.star,
-                      size: 15,
-                      color: Color(0xFF0057C2),
-                    ),
+                    const Icon(Icons.star, size: 15, color: Color(0xFF0057C2)),
                     const SizedBox(width: 4),
                     Text(
                       "$rating ($reviewCount đánh giá)",
@@ -280,7 +331,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   }
 
   Widget _buildInfoSection() {
-    final String bio = widget.doctorData['bio'] ?? 
+    final String bio =
+        widget.doctorData['bio'] ??
         "Thông tin chi tiết về thực hành lâm sàng và lộ trình chẩn đoán điều trị y tế toàn diện của bác sĩ đang được cập nhật...";
 
     return Column(
@@ -364,15 +416,9 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   ),
                   Row(
                     children: const [
-                      Icon(
-                        Icons.chevron_left,
-                        color: Color(0xFFB0B8C5),
-                      ),
+                      Icon(Icons.chevron_left, color: Color(0xFFB0B8C5)),
                       SizedBox(width: 4),
-                      Icon(
-                        Icons.chevron_right,
-                        color: Color(0xFFB0B8C5),
-                      ),
+                      Icon(Icons.chevron_right, color: Color(0xFFB0B8C5)),
                     ],
                   ),
                 ],
@@ -404,39 +450,42 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               Wrap(
                 spacing: 10,
                 runSpacing: 12,
-                children: List.generate(
-                  17,
-                  (index) {
-                    int day = index + 8;
-                    bool isSelected = day == selectedDay;
+                children: List.generate(17, (index) {
+                  int day = index + 8;
+                  bool isSelected = day == selectedDay;
 
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedDay = day;
-                        });
-                      },
-                      child: Container(
-                        width: 36,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFF0057C2) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "$day",
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: isSelected ? Colors.white : const Color(0xFF1A1F36),
-                            ),
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedDay = day;
+                      });
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF0057C2)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Center(
+                        child: Text(
+                          "$day",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : const Color(0xFF1A1F36),
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                }),
               ),
             ],
           ),
@@ -485,8 +534,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                   color: disabled
                       ? const Color(0xFFF0F2F5)
                       : isSelected
-                          ? const Color(0xFF0057C2)
-                          : Colors.white,
+                      ? const Color(0xFF0057C2)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: disabled || isSelected
                       ? []
@@ -507,8 +556,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                       color: disabled
                           ? const Color(0xFFCDD5DF)
                           : isSelected
-                              ? Colors.white
-                              : const Color(0xFF1A1F36),
+                          ? Colors.white
+                          : const Color(0xFF1A1F36),
                     ),
                   ),
                 ),
@@ -528,34 +577,51 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
         height: 62,
         child: ElevatedButton(
           onPressed: () async {
+            if (!_isActive) {
+              _showRestrictedDialog();
+              return;
+            }
             final String selectedTime = timeSlots[selectedTimeIndex]['time'];
             final String appointmentDate = "2026-12-$selectedDay";
-            
+
             final int doctorId = widget.doctorData['doctorid'] ?? 0;
+            //loading
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
+            );
 
             try {
               await Supabase.instance.client.from('appointments').insert({
                 'doctorid': doctorId,
                 'appointmentdate': appointmentDate,
-                'starttime': "$selectedTime:00", 
+                'starttime': "$selectedTime:00",
                 'endtime': "$selectedTime:00",
-                'status': 'Pending',           
+                'status': 'Pending',
                 'createdat': DateTime.now().toIso8601String(),
               });
 
-              // 4. Thông báo và tự động Pop điều hướng quay lại
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đặt lịch hẹn khám thành công!")),
-                );
-                Navigator.pop(context);
-              }
+              if (!mounted) return;
+              Navigator.pop(context); // Đóng loading
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Đặt lịch hẹn khám thành công!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+              Navigator.pop(context); // Quay lại trang trước
             } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Lỗi hệ thống: Không thể đặt lịch lịch hẹn ($e)")),
-                );
-              }
+              if (!mounted) return;
+              Navigator.pop(context); // Đóng loading
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Lỗi hệ thống: $e"),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
           },
           style: ElevatedButton.styleFrom(
