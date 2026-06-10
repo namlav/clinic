@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'doctor_profile_screen.dart'; // Đảm bảo import chính xác file view profile bác sĩ của bạn
+import 'doctor_profile_screen.dart'; 
+import 'package:clinic/widgets/bottom_navigation_bar_widget.dart'; 
+import 'package:clinic/features/home/views/home_screen.dart';
+import 'package:clinic/features/appointment/views/schedule_list_screen.dart';
+import 'package:clinic/features/profile/views/profile_screen.dart';
 
 class BookingPage extends StatefulWidget {
   const BookingPage({super.key});
@@ -11,12 +15,12 @@ class BookingPage extends StatefulWidget {
 
 class _BookingPageState extends State<BookingPage> {
   int selectedFilter = 0;
-  int selectedBottomNav = 1;
+  int selectedBottomNav = 1; 
 
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _allDoctors = [];
   List<Map<String, dynamic>> _filteredDoctors = [];
-  Map<int, String?> _doctorNextAppointments = {}; // Bản đồ lưu lịch hẹn sắp tới của từng bác sĩ
+  Map<int, String?> _doctorNextAppointments = {}; 
   bool _isLoading = false;
 
   final List<String> filters = [
@@ -39,7 +43,6 @@ class _BookingPageState extends State<BookingPage> {
     try {
       final client = Supabase.instance.client;
 
-      // #1 THAY ĐỔI: Select bổ sung thông tin từ bảng specialties liên kết
       final response = await client.from('doctors').select('''
         *,
         specialties (
@@ -49,7 +52,6 @@ class _BookingPageState extends State<BookingPage> {
       
       _allDoctors = List<Map<String, dynamic>>.from(response);
 
-      // Tải bổ sung lịch hẹn Pending để tính toán thời gian cho ô màu xanh lá
       final appointmentResponse = await client
           .from('appointments')
           .select('doctorid, appointmentdate, starttime')
@@ -82,7 +84,7 @@ class _BookingPageState extends State<BookingPage> {
       }
 
       _doctorNextAppointments = tempNextAppoints;
-      _filteredDoctors = _allDoctors; // Khởi tạo danh sách hiển thị ban đầu
+      _filteredDoctors = _allDoctors; 
 
       return _allDoctors;
     } catch (e) {
@@ -90,12 +92,10 @@ class _BookingPageState extends State<BookingPage> {
     }
   }
 
-  // Hàm xử lý logic lọc và tìm kiếm động trực tiếp trên giao diện
   void _applyFilterAndSearch() {
     String searchWord = _searchController.text.trim().toLowerCase();
     List<Map<String, dynamic>> output = _allDoctors;
 
-    // A. Lọc theo bộ nút bấm chuyên khoa (Filters)
     if (selectedFilter == 1) {
       output = output.where((doc) => doc['specialties']?['specialtyname']?.toString().contains("Tim mạch") ?? false).toList();
     } else if (selectedFilter == 2) {
@@ -109,7 +109,6 @@ class _BookingPageState extends State<BookingPage> {
       output = output.where((doc) => doc['specialties']?['specialtyname']?.toString().contains("Da liễu") ?? false).toList();
     }
 
-    // B. ĐÃ NÂNG CẤP: Lọc theo ký tự nhập từ TextField (Tìm theo Tên bác sĩ HOẶC Tên chuyên khoa)
     if (searchWord.isNotEmpty) {
       output = output.where((doc) {
         String name = (doc['fullname'] ?? "").toString().toLowerCase();
@@ -126,241 +125,216 @@ class _BookingPageState extends State<BookingPage> {
     });
   }
 
+  void _handleNavigation(int index) {
+    if (index == 1) return; 
+
+    if (index == 0) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } else if (index == 2) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ScheduleListScreen()));
+    } else if (index == 3) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 14),
-                
-                /// HEADER
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        const SizedBox(width: 12),
-                        const Text(
-                          "SereneHealth",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF0057C2),
-                            letterSpacing: -0.2,
-                          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 14),
+            
+            /// HEADER
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      const Text(
+                        "SereneHealth",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0057C2),
+                          letterSpacing: -0.2,
                         ),
-                      ],
-                    ),
-                    const Icon(
-                      Icons.search,
-                      size: 24,
-                      color: Color(0xFF0057C2),
+                      ),
+                    ],
+                  ),
+                  const Icon(
+                    Icons.search,
+                    size: 24,
+                    color: Color(0xFF0057C2),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            /// SEARCH BOX
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-
-                /// SEARCH BOX
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.search,
-                        size: 20,
-                        color: Color(0xFFB5BDCA),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (value) => _applyFilterAndSearch(),
-                          decoration: const InputDecoration(
-                            hintText: "Tìm kiếm bác sĩ, chuyên khoa...",
-                            hintStyle: TextStyle(color: Color(0xFF9CA5B5), fontSize: 14),
-                            border: InputBorder.none,
-                          ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.search,
+                      size: 20,
+                      color: Color(0xFFB5BDCA),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) => _applyFilterAndSearch(),
+                        decoration: const InputDecoration(
+                          hintText: "Tìm kiếm bác sĩ, chuyên khoa...",
+                          hintStyle: TextStyle(color: Color(0xFF9CA5B5), fontSize: 14),
+                          border: InputBorder.none,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
+              ),
+            ),
+            const SizedBox(height: 24),
 
-                /// FILTERS
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: List.generate(
-                    filters.length,
-                    (index) {
-                      bool isSelected = selectedFilter == index;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFilter = index;
-                            _applyFilterAndSearch();
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF0057C2) : const Color(0xFFD9ECFF),
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (index == 0)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 6),
-                                  child: Icon(
-                                    Icons.tune,
-                                    size: 16,
-                                    color: isSelected ? Colors.white : const Color(0xFF5B6B81),
-                                  ),
-                                ),
-                              Text(
-                                filters[index],
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+            /// FILTERS
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: List.generate(
+                  filters.length,
+                  (index) {
+                    bool isSelected = selectedFilter == index;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedFilter = index;
+                          _applyFilterAndSearch();
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isSelected ? const Color(0xFF0057C2) : const Color(0xFFD9ECFF),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (index == 0)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: Icon(
+                                  Icons.tune,
+                                  size: 16,
                                   color: isSelected ? Colors.white : const Color(0xFF5B6B81),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                /// DANH SÁCH BÁC SĨ 
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _doctorsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(24.0),
-                          child: CircularProgressIndicator(color: Color(0xFF0057C2)),
-                        ),
-                      );
-                    }
-                    
-                    if (snapshot.hasError || !snapshot.hasData || _allDoctors.isEmpty) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(24.0),
-                          child: Text(
-                            "Không thể tải danh sách bác sĩ",
-                            style: TextStyle(color: Color(0xFF6E7688)),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _filteredDoctors.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 18),
-                      itemBuilder: (context, index) {
-                        final doc = _filteredDoctors[index];
-                        final int docId = doc['doctorid'] ?? 0;
-                        
-                        final String specialtyName = doc['specialties']?['specialtyname'] ?? (doc['title'] ?? "Chuyên khoa");
-                        final String? nextAppointmentStr = _doctorNextAppointments[docId];
-
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => DoctorProfilePage(doctorData: doc),
+                            Text(
+                              filters[index],
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: isSelected ? Colors.white : const Color(0xFF5B6B81),
                               ),
-                            );
-                          },
-                          child: index == 2
-                              ? _largeDoctorCard(
-                                  image: doc['avatarurl'] ?? "assets/images/ava1.jpg",
-                                  name: (doc['fullname'] ?? "Bác sĩ").toString().replaceAll(' ', '\n'),
-                                  specialty: specialtyName,
-                                  rating: (doc['rating'] ?? 5.0).toString(),
-                                  experience: "${doc['experienceyears'] ?? 5} năm kinh nghiệm",
-                                  bio: doc['bio'] ?? "Chuyên về thăm khám lâm sàng và điều trị nội khoa...",
-                                )
-                              : _doctorCard(
-                                  image: doc['avatarurl'] ?? "assets/images/ava1.jpg",
-                                  name: (doc['fullname'] ?? "Bác sĩ").toString().replaceAll(' ', '\n'),
-                                  specialty: specialtyName.replaceAll(' ', '\n'),
-                                  rating: (doc['rating'] ?? 5.0).toString(),
-                                  experience: "${doc['experienceyears'] ?? 5} năm kinh nghiệm",
-                                  buttonText: "Đặt lịch",
-                                  subtitle: nextAppointmentStr, 
-                                ),
-                        );
-                      },
+                            ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),
-                
-                const SizedBox(height: 110),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 28),
+
+            Expanded(
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _doctorsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Color(0xFF0057C2)),
+                    );
+                  }
+                  
+                  if (snapshot.hasError || !snapshot.hasData || _allDoctors.isEmpty) {
+                    return const Center(
+                      child: Text("Không thể tải danh sách bác sĩ", style: TextStyle(color: Color(0xFF6E7688))),
+                    );
+                  }
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: _filteredDoctors.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 18),
+                    itemBuilder: (context, index) {
+                      final doc = _filteredDoctors[index];
+                      final int docId = doc['doctorid'] ?? 0;
+                      
+                      final String specialtyName = doc['specialties']?['specialtyname'] ?? (doc['title'] ?? "Chuyên khoa");
+                      final String? nextAppointmentStr = _doctorNextAppointments[docId];
+
+                      return index == 2
+                          ? _largeDoctorCard(
+                              image: doc['avatarurl'] ?? "assets/images/ava1.jpg",
+                              name: (doc['fullname'] ?? "Bác sĩ").toString().replaceAll(' ', '\n'),
+                              specialty: specialtyName,
+                              rating: (doc['rating'] ?? 5.0).toString(),
+                              experience: "${doc['experienceyears'] ?? 5} năm kinh nghiệm",
+                              bio: doc['bio'] ?? "Chuyên về thăm khám lâm sàng và điều trị nội khoa...",
+                              docData: doc, 
+                            )
+                          : _doctorCard(
+                              image: doc['avatarurl'] ?? "assets/images/ava1.jpg",
+                              name: (doc['fullname'] ?? "Bác sĩ").toString().replaceAll(' ', '\n'),
+                              specialty: specialtyName.replaceAll(' ', '\n'),
+                              rating: (doc['rating'] ?? 5.0).toString(),
+                              experience: "${doc['experienceyears'] ?? 5} năm kinh nghiệm",
+                              buttonText: "Đặt lịch",
+                              subtitle: nextAppointmentStr, 
+                              docData: doc, 
+                            );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
 
-      /// BOTTOM NAV
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(28),
-            topRight: Radius.circular(28),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _bottomItem(0, Icons.home_outlined, "HOME"),
-            _selectedBottomItem(1, Icons.search, "SEARCH"),
-            _bottomItem(2, Icons.calendar_today_outlined, "SCHEDULE"),
-            _bottomItem(3, Icons.person_outline, "PROFILE"),
-          ],
-        ),
+      bottomNavigationBar: BottomNavigationBarApp(
+        initialIndex: 1, 
+        onItemTapped: _handleNavigation, 
       ),
     );
   }
 
+  /// CARD TIÊU CHUẨN
   Widget _doctorCard({
     required String image,
     required String name,
@@ -368,6 +342,7 @@ class _BookingPageState extends State<BookingPage> {
     required String rating,
     required String experience,
     required String buttonText,
+    required Map<String, dynamic> docData,
     String? subtitle,
   }) {
     return Container(
@@ -444,7 +419,14 @@ class _BookingPageState extends State<BookingPage> {
                   : const SizedBox.shrink(), 
               
               ElevatedButton(
-                onPressed: () {}, 
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DoctorProfilePage(doctorData: docData),
+                    ),
+                  );
+                }, 
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0057C2),
                   elevation: 8,
@@ -464,6 +446,7 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
+  /// CARD LỚN
   Widget _largeDoctorCard({
     required String image,
     required String name,
@@ -471,6 +454,7 @@ class _BookingPageState extends State<BookingPage> {
     required String rating,
     required String experience,
     required String bio,
+    required Map<String, dynamic> docData,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -550,7 +534,14 @@ class _BookingPageState extends State<BookingPage> {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DoctorProfilePage(doctorData: docData),
+                        ),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0057C2),
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -586,79 +577,6 @@ class _BookingPageState extends State<BookingPage> {
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0057C2)),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _smallAvatar(String text) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: const Color(0xFFDCE6F9),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Center(
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-        ),
-      ),
-    );
-  }
-
-  Widget _bottomItem(int index, IconData icon, String label) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedBottomNav = index;
-        });
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 22, color: const Color(0xFFB1BAC8)),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: Color(0xFFB1BAC8)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _selectedBottomItem(int index, IconData icon, String label) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedBottomNav = index;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0057C2),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.blue.withOpacity(0.2),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 20, color: Colors.white),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6, color: Colors.white),
-            ),
-          ],
-        ),
       ),
     );
   }

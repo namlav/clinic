@@ -1,26 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'SereneHealth',
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
-      ),
-      home: const DoctorReplacementPage(appointmentId: 1),
-    );
-  }
-}
+import 'doctor_profile_screen.dart'; 
+import 'package:clinic/widgets/bottom_navigation_bar_widget.dart'; 
+import 'package:clinic/features/home/views/home_screen.dart';
+import 'package:clinic/features/booking/views/booking_screen.dart';
+import 'package:clinic/features/profile/views/profile_screen.dart';
 
 class DoctorReplacementPage extends StatefulWidget {
   final int appointmentId;
@@ -35,7 +19,7 @@ class DoctorReplacementPage extends StatefulWidget {
 }
 
 class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
-  int selectedNav = 2;
+  int selectedBottomNav = 2; 
   
   late Future<Map<String, dynamic>?> _replacementDataFuture;
 
@@ -83,6 +67,18 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  void _handleNavigation(int index) {
+    if (index == 2) return; 
+
+    if (index == 0) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } else if (index == 1) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const BookingPage()));
+    } else if (index == 3) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
     }
   }
 
@@ -146,8 +142,10 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
                   ),
                 ),
 
-                /// BOTTOM NAV
-                _buildBottomNav(),
+                BottomNavigationBarApp(
+                  initialIndex: 2, 
+                  onItemTapped: _handleNavigation, 
+                ),
               ],
             );
           },
@@ -511,94 +509,6 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    final items = [
-      {'icon': Icons.home_outlined, 'label': 'HOME'},
-      {'icon': Icons.search, 'label': 'SEARCH'},
-      {'icon': Icons.calendar_today_outlined, 'label': 'SCHEDULE'},
-      {'icon': Icons.person_outline, 'label': 'PROFILE'},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(28),
-          topRight: Radius.circular(28),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(items.length, (index) {
-          bool isSelected = selectedNav == index;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                selectedNav = index;
-              });
-            },
-            child: isSelected
-                ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0057C2),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          items[index]['icon'] as IconData,
-                          size: 20,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          items[index]['label'] as String,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        items[index]['icon'] as IconData,
-                        size: 23,
-                        color: const Color(0xFFB0B8C5),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        items[index]['label'] as String,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.5,
-                          color: Color(0xFFB0B8C5),
-                        ),
-                      ),
-                    ],
-                  ),
-          );
-        }),
       ),
     );
   }

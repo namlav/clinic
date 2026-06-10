@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'search_screen.dart';
-import '../../../widgets/fade_page_route.dart';
 import 'package:clinic/features/appointment/views/schedule_list_screen.dart';
 import 'package:clinic/features/booking/views/booking_screen.dart';
 
@@ -30,7 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _specialtiesFuture = _fetchSpecialties();
   }
 
-  //Lấy thông tin cá nhân của User hiện tại từ Supabase
   Future<Map<String, dynamic>?> _fetchUserProfile() async {
     try {
       final authUser = Supabase.instance.client.auth.currentUser;
@@ -49,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  //  Lấy cuộc hẹn ưu tiên sắp diễn ra
+  // Lấy cuộc hẹn ưu tiên sắp diễn ra
   Future<Map<String, dynamic>?> _fetchPriorityAppointment() async {
     try {
       final response = await Supabase.instance.client
@@ -144,11 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   shape: BoxShape.circle,
                                   image: DecorationImage(
                                     image: userAvatar.startsWith('http')
-                                        ? NetworkImage(userAvatar)
-                                              as ImageProvider
-                                        : const AssetImage(
-                                            "assets/images/ava1.jpg",
-                                          ),
+                                        ? NetworkImage(userAvatar) as ImageProvider
+                                        : const AssetImage("assets/images/ava1.jpg"),
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -168,19 +162,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
 
-                          /// SEARCH
                           IconButton(
                             onPressed: () {
-                              if (widget.onSearchTap != null) {
-                                widget.onSearchTap!();
-                              } else {
-                                Navigator.push(
-                                  context,
-                                  FadePageRoute(
-                                    builder: (context) => const SearchScreen(),
-                                  ),
-                                );
-                              }
+                              widget.onSearchTap?.call();
                             },
                             icon: const Icon(
                               Icons.search,
@@ -316,12 +300,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     );
                   }
 
-                  final doctor =
-                      appointment['doctors'] as Map<String, dynamic>?;
-                  final String doctorName =
-                      doctor?['fullname'] ?? "Bác sĩ chuyên khoa";
-                  final String specialtyName =
-                      doctor?['title'] ?? "Khoa Tổng quát";
+                  final doctor = appointment['doctors'] as Map<String, dynamic>?;
+                  final String doctorName = doctor?['fullname'] ?? "Bác sĩ chuyên khoa";
+                  final String specialtyName = doctor?['title'] ?? "Khoa Tổng quát";
                   final String avatarUrl = doctor?['avatarurl'] ?? "";
 
                   return Container(
@@ -348,7 +329,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Row(
                           children: [
-                            /// DYNAMIC AVATAR BÁC SĨ
                             ClipRRect(
                               borderRadius: BorderRadius.circular(16),
                               child: avatarUrl.startsWith('http')
@@ -410,10 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Container(
                                 width: 125,
                                 height: 82,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(18),
                                   color: Colors.white.withOpacity(0.12),
@@ -435,9 +412,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             fontSize: 11,
                                             letterSpacing: 1,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(
-                                              0.75,
-                                            ),
+                                            color: Colors.white.withOpacity(0.75),
                                           ),
                                         ),
                                       ],
@@ -461,10 +436,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Container(
                                 width: 125,
                                 height: 82,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(18),
                                   color: Colors.white.withOpacity(0.12),
@@ -486,9 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             fontSize: 11,
                                             letterSpacing: 1,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(
-                                              0.75,
-                                            ),
+                                            color: Colors.white.withOpacity(0.75),
                                           ),
                                         ),
                                       ],
@@ -515,9 +485,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         /// BUTTON
                         GestureDetector(
                           onTap: () {
-                            print(
-                              "Xác nhận tham gia lịch hẹn ID: ${appointment['appointmentid']}",
-                            );
+                            print("Xác nhận tham gia lịch hẹn ID: ${appointment['appointmentid']}");
                           },
                           child: Container(
                             width: double.infinity,
@@ -578,13 +546,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: specialties.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 1.2,
-                        ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 1.2,
+                    ),
                     itemBuilder: (context, index) {
                       final spec = specialties[index];
                       return _CategoryItem(
@@ -617,14 +584,14 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Color(0xFF2F6CD3),
                             ),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
                             "Giữ cơ thể đủ nước trong suốt mùa thu",
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
-                          SizedBox(height: 6),
+                          const SizedBox(height: 6),
                           Text(
-                            "Uông nước giúp duy trì mức năng lượng trong suốt cả ngày.",
+                            "Uống nước giúp duy trì mức năng lượng trong suốt cả ngày.",
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xFF8A94A6),
@@ -650,14 +617,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      /// FLOAT BUTTON
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF2F6CD3),
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const BookingPage()),
-          );
+      
+          widget.onSearchTap?.call();
         },
         child: const Icon(Icons.add, color: Colors.white),
       ),
