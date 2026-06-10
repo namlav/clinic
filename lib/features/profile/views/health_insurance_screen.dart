@@ -19,7 +19,10 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
   Future<void> _downloadInvoices() async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đang tải hóa đơn...'), duration: Duration(seconds: 2)),
+        const SnackBar(
+          content: Text('Đang tải hóa đơn...'),
+          duration: Duration(seconds: 2),
+        ),
       );
 
       final supabase = Supabase.instance.client;
@@ -37,7 +40,10 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
       if ((payments as List).isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không có hóa đơn nào'), backgroundColor: Colors.orange),
+            const SnackBar(
+              content: Text('Không có hóa đơn nào'),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
         return;
@@ -55,7 +61,10 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
       if (fileUrls.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không có file hóa đơn'), backgroundColor: Colors.orange),
+            const SnackBar(
+              content: Text('Không có file hóa đơn'),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
         return;
@@ -63,11 +72,17 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
 
       // Mở file URL đầu tiên (hoặc show list để user chọn)
       if (await canLaunchUrl(Uri.parse(fileUrls[0]))) {
-        await launchUrl(Uri.parse(fileUrls[0]), mode: LaunchMode.externalApplication);
+        await launchUrl(
+          Uri.parse(fileUrls[0]),
+          mode: LaunchMode.externalApplication,
+        );
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Không thể mở file'), backgroundColor: Colors.red),
+            const SnackBar(
+              content: Text('Không thể mở file'),
+              backgroundColor: Colors.red,
+            ),
           );
         }
       }
@@ -129,11 +144,18 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.health_and_safety, size: 64, color: Colors.grey[400]),
+                    Icon(
+                      Icons.health_and_safety,
+                      size: 64,
+                      color: Colors.grey[400],
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'Chưa có thông tin bảo hiểm',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -171,15 +193,15 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
                 ),
                 const SizedBox(height: 10),
                 _buildDetailTile(
-                  'Phí hàng tháng',
-                  _formatCurrency(insurance.monthlyPremium),
-                  Icons.payments,
+                  'Hạn mức khấu trừ',
+                  _formatCurrency(insurance.deductibleLimit),
+                  Icons.arrow_downward,
                 ),
                 const SizedBox(height: 10),
                 _buildDetailTile(
-                  'Khấu trừ',
-                  _formatCurrency(insurance.copay),
-                  Icons.arrow_downward,
+                  'Chi phí bảo hiểm',
+                  _formatCurrency(insurance.insuranceCost),
+                  Icons.payments,
                 ),
                 const SizedBox(height: 20),
                 _buildActionButton('Tải hóa đơn', () => _downloadInvoices()),
@@ -309,8 +331,10 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
   }
 
   Widget _buildCoverageCard(HealthInsurance insurance) {
-    final usagePercent = insurance.coverage > 0
-        ? (insurance.totalInvoiceAmount / insurance.coverage).clamp(0.0, 1.0).toDouble()
+    final usagePercent = insurance.deductibleLimit > 0
+        ? (insurance.totalInvoiceAmount / insurance.deductibleLimit)
+              .clamp(0.0, 1.0)
+              .toDouble()
         : 0.0;
 
     return Container(
@@ -393,7 +417,7 @@ class _HealthInsuranceScreenState extends State<HealthInsuranceScreen> {
               ),
               Expanded(
                 child: Text(
-                  '${_formatCurrency(insurance.coverage)} hạn mức',
+                  '${_formatCurrency(insurance.deductibleLimit)} hạn mức',
                   textAlign: TextAlign.right,
                   style: const TextStyle(
                     fontSize: 12,

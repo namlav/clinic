@@ -10,6 +10,8 @@ class HealthInsurance {
   final double coverage;
   final double monthlyPremium;
   final double copay;
+  final double deductibleLimit;
+  final double insuranceCost;
   final String status;
   final double totalInvoiceAmount;
 
@@ -23,6 +25,8 @@ class HealthInsurance {
     required this.coverage,
     required this.monthlyPremium,
     required this.copay,
+    required this.deductibleLimit,
+    required this.insuranceCost,
     required this.status,
     this.totalInvoiceAmount = 0.0,
   });
@@ -42,6 +46,8 @@ class HealthInsurance {
       coverage: (json['medicalserviceslimit'] ?? 0).toDouble(),
       monthlyPremium: (json['monthlypremium'] ?? 0).toDouble(),
       copay: (json['deductibletotal'] ?? 0).toDouble(),
+      deductibleLimit: (json['deductiblelimit'] ?? 0).toDouble(),
+      insuranceCost: (json['insurancecost'] ?? 0).toDouble(),
       status: json['status'] ?? 'ACTIVE',
       totalInvoiceAmount: (json['total_invoice_amount'] ?? 0).toDouble(),
     );
@@ -58,6 +64,8 @@ class HealthInsurance {
       'medicalserviceslimit': coverage,
       'monthlypremium': monthlyPremium,
       'deductibletotal': copay,
+      'deductiblelimit': deductibleLimit,
+      'insurancecost': insuranceCost,
       'status': status,
     };
   }
@@ -71,7 +79,6 @@ class HealthInsurance {
         throw Exception('User not authenticated');
       }
 
-      // Fetch insurance data - query without userid filter since userid column is INTEGER
       final insuranceResponse = await supabase
           .from('insurances')
           .select()
@@ -82,19 +89,33 @@ class HealthInsurance {
         return null;
       }
 
-      // Fetch payments data to calculate total invoice amount
-      final paymentsResponse = await supabase
-          .from('payments')
-          .select('totalamount')
-          .limit(100);
+      final appointmentsResponse = await supabase
+          .from('appointments')
+          .select('appointmentid')
+          .eq('status', 'Completed')
+          .limit(1000);
 
       double totalInvoiceAmount = 0.0;
-      if (paymentsResponse is List) {
-        totalInvoiceAmount = (paymentsResponse as List).fold<double>(
-          0.0,
-          (sum, payment) =>
-              sum + ((payment['totalamount'] ?? 0) as num).toDouble(),
-        );
+
+      if (appointmentsResponse is List && appointmentsResponse.isNotEmpty) {
+        final appointmentIds = (appointmentsResponse as List)
+            .map((apt) => apt['appointmentid'])
+            .toList();
+
+        if (appointmentIds.isNotEmpty) {
+          final paymentsResponse = await supabase
+              .from('payments')
+              .select('totalamount')
+              .inFilter('appointmentid', appointmentIds);
+
+          if (paymentsResponse is List) {
+            totalInvoiceAmount = (paymentsResponse as List).fold<double>(
+              0.0,
+              (sum, payment) =>
+                  sum + ((payment['totalamount'] ?? 0) as num).toDouble(),
+            );
+          }
+        }
       }
 
       insuranceResponse['total_invoice_amount'] = totalInvoiceAmount;
