@@ -27,7 +27,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       final String email = _emailController.text.trim().toLowerCase();
 
       try {
-        // 1. Kiểm tra email có tồn tại trong bảng users (Public) trước không (Tùy chọn)
         final userCheck = await supabase
             .from('users')
             .select()
@@ -38,18 +37,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           throw 'Email này chưa được đăng ký trong hệ thống.';
         }
 
-        // 2. Gửi mã OTP khôi phục mật khẩu về Email qua Supabase
         await supabase.auth.resetPasswordForEmail(email);
 
         if (!mounted) return;
 
-        // 3. Chuyển sang màn hình xác thực OTP (loại recovery)
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => OTPVerificationScreen(
               target: email,
-              type: OtpTypeVerify.recovery, // Sử dụng enum Recovery
+              type: OtpTypeVerify.recovery,
             ),
           ),
         );
@@ -130,7 +127,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   errorStyle: const TextStyle(color: Colors.redAccent),
                 ),
-                // Ràng buộc Email
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Vui lòng nhập email';

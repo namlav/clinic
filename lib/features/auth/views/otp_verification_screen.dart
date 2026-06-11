@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'create_new_password_screen.dart';
 
-enum OtpTypeVerify { email, sms, recovery }
+enum OtpTypeVerify { email, recovery }
 
 class OTPVerificationScreen extends StatefulWidget {
   final String target;
@@ -30,19 +30,19 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     setState(() => _isVerifying = true);
 
     try {
+      OtpType supabaseOtpType = widget.type == OtpTypeVerify.recovery
+          ? OtpType.recovery
+          : OtpType.email;
+
       final res = await supabase.auth.verifyOTP(
-        type: widget.type == OtpTypeVerify.sms
-            ? OtpType.sms
-            : (widget.type == OtpTypeVerify.email
-                  ? OtpType.signup
-                  : OtpType.recovery),
+        type: supabaseOtpType,
         token: _otpController.text.trim(),
-        email: widget.type != OtpTypeVerify.sms ? widget.target : null,
-        phone: widget.type == OtpTypeVerify.sms ? widget.target : null,
+        email: widget.target,
       );
 
       if (res.user != null) {
         if (widget.type == OtpTypeVerify.recovery) {
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -50,15 +50,10 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             ),
           );
         } else {
-          // Ép cập nhật Password & Email để Login được bằng Pass
           await supabase.auth.updateUser(
-            UserAttributes(
-              email: widget.userData!['email'],
-              password: widget.userData!['password'],
-            ),
+            UserAttributes(password: widget.userData!['password']),
           );
 
-          // Lưu DB public
           await supabase.from('users').upsert({
             'userid': res.user!.id,
             'authid': res.user!.id,
@@ -71,53 +66,99 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
           }, onConflict: 'userid');
 
           await supabase.auth.signOut();
+
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Đăng ký thành công! Vui lòng đăng nhập."),
+              backgroundColor: Colors.green,
+            ),
+          );
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       }
+    } on AuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Lỗi: ${e.message}"),
+          backgroundColor: Colors.red,
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Lỗi xác thực: Mã sai hoặc hết hạn")),
+        const SnackBar(
+          content: Text("Mã xác thực không đúng hoặc đã hết hạn"),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
-      setState(() => _isVerifying = false);
+      if (mounted) setState(() => _isVerifying = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Xác thực mã OTP")),
-      body: Padding(
+      appBar: AppBar(title: const Text("Xác thực Email"), elevation: 0),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(30),
         child: Column(
           children: [
-            Text("Nhập mã 6 số gửi đến ${widget.target}"),
+            const Icon(
+              Icons.email_outlined,
+              size: 80,
+              color: Color(0xFF0056A7),
+            ),
             const SizedBox(height: 20),
+            const Text(
+              "Mã OTP đã được gửi đến Email",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Text(widget.target, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 30),
             TextField(
               controller: _otpController,
               keyboardType: TextInputType.number,
               maxLength: 6,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 10),
-              decoration: const InputDecoration(
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 10,
+              ),
+              decoration: InputDecoration(
                 counterText: "",
-                border: OutlineInputBorder(),
+                hintText: "000000",
+                hintStyle: TextStyle(
+                  color: Colors.grey.shade300,
+                  letterSpacing: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0056A7),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                 ),
                 onPressed: _isVerifying ? null : _verify,
                 child: _isVerifying
-                    ? const CircularProgressIndicator()
+                    ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
                         "XÁC NHẬN",
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
               ),
             ),
