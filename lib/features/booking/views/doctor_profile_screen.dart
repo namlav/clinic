@@ -20,6 +20,66 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   DateTime selectedDate = DateTime.now();
   int selectedTimeIndex = -1; // Đổi thành -1 để bắt buộc người dùng tự chọn giờ
   bool _isConfirming = false; // Biến trạng thái để khóa nút khi đang xử lý
+  bool _isActive = true; // Mặc định là cho phép
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserStatus();
+  }
+
+  Future<void> _checkUserStatus() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final data = await Supabase.instance.client
+            .from('users')
+            .select('isactive')
+            .eq('authid', user.id)
+            .single();
+
+        if (mounted) {
+          setState(() {
+            _isActive = data['isactive'] ?? true;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi kiểm tra trạng thái user: $e");
+    }
+  }
+
+  void _showRestrictedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.lock_person, color: Colors.red),
+            SizedBox(width: 10),
+            Text("Tài khoản bị hạn chế"),
+          ],
+        ),
+        content: const Text(
+          "Tài khoản của bạn đã bị hạn chế chức năng đặt lịch khám do vi phạm quy định hoặc chưa hoàn thiện hồ sơ. Vui lòng liên hệ hỗ trợ để biết thêm chi tiết.",
+          style: TextStyle(fontSize: 15, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "ĐÃ HIỂU",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0057C2),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   final List<Map<String, dynamic>> timeSlots = [
     {'time': '09:00', 'disabled': false},
@@ -704,14 +764,18 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                             ),
                             title: Row(
                               children: [
-                                const Icon(Icons.error_outline,
-                                    color: Colors.red, size: 28),
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 28,
+                                ),
                                 const SizedBox(width: 8),
                                 const Text(
                                   'Khung giờ đã đầy',
                                   style: TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold),
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),

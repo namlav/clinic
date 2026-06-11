@@ -1,10 +1,13 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/patient_model.dart';
+import '../models/health_metrics_model.dart';
 import 'medical_records_screen.dart';
 import 'vaccination_history_screen.dart';
 import 'health_insurance_screen.dart';
 import '../../appointment/views/appointment_history_screen.dart';
 import '../../notification/views/notification_settings_screen.dart';
+import '../../auth/views/welcome_screen.dart';
 import '../../../widgets/fade_page_route.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -15,28 +18,12 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late Patient patient;
+  late Future<Patient> _patientFuture;
 
   @override
   void initState() {
     super.initState();
-    _initializeMockData();
-  }
-
-  void _initializeMockData() {
-    patient = Patient(
-      id: '1',
-      fullName: 'Nguyễn Khỏe Khoắn',
-      email: 'nguyen.khoai@example.com',
-      phone: '+84 123 456 789',
-      avatarUrl: 'assets/avatar.jpg',
-      memberType: 'Premium Member',
-      memberSince: DateTime(2023, 4, 21),
-      heartRate: 72,
-      bloodPressure: '120/80',
-      weight: 70,
-      height: 175,
-    );
+    _patientFuture = Patient.fetch();
   }
 
   @override
@@ -65,34 +52,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildProfileCard(),
-            const SizedBox(height: 18),
-            _buildHealthOverviewCard(),
-            const SizedBox(height: 18),
-            _buildSectionTitle('Quản lý hồ sơ'),
-            const SizedBox(height: 12),
-            _buildFeatureGrid(),
-            const SizedBox(height: 20),
-            _buildSectionTitle('Cài đặt'),
-            const SizedBox(height: 12),
-            _buildSettingsTile('🔔 Thông Báo', 'notification_settings'),
-            const SizedBox(height: 10),
-            _buildSettingsTile('❓ Hỗ Trợ', null),
-            const SizedBox(height: 10),
-            _buildSettingsTile('🚪 Đăng xuất', null),
-            const SizedBox(height: 24),
-          ],
-        ),
+      body: FutureBuilder<Patient>(
+        future: _patientFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
+                ],
+              ),
+            );
+          }
+
+          final patient = snapshot.data;
+          if (patient == null) {
+            return const Center(child: Text('No data available'));
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildProfileCard(patient),
+                const SizedBox(height: 18),
+                _buildHealthOverviewCard(patient, _buildHealthMetricsFromPatient(patient)),
+                const SizedBox(height: 18),
+                _buildSectionTitle('Quản lý hồ sơ'),
+                const SizedBox(height: 12),
+                _buildFeatureGrid(),
+                const SizedBox(height: 20),
+                _buildSectionTitle('Cài đặt'),
+                const SizedBox(height: 12),
+                _buildSettingsTile('🔔 Thông Báo', 'notification_settings'),
+                const SizedBox(height: 10),
+                _buildSettingsTile('❓ Hỗ Trợ', null),
+                const SizedBox(height: 10),
+                _buildSettingsTile('🚪 Đăng xuất', 'logout'),
+                const SizedBox(height: 24),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProfileCard() {
+  HealthMetrics? _buildHealthMetricsFromPatient(Patient patient) {
+    if (patient.healthHeartRate != null ||
+        patient.healthBloodPressureSys != null ||
+        patient.healthWeight != null) {
+      return HealthMetrics(
+        id: patient.id,
+        heartRate: patient.healthHeartRate ?? 0,
+        bloodPressureSys: (patient.healthBloodPressureSys ?? 0).toString(),
+        bloodPressureDia: (patient.healthBloodPressureDia ?? 0).toString(),
+        weightKg: patient.healthWeight ?? 0.0,
+        weightTrend: patient.healthWeightTrend ?? '',
+      );
+    }
+    return null;
+  }
+
+  Widget _buildProfileCard(Patient patient) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       decoration: BoxDecoration(
@@ -140,20 +170,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Thành viên từ ${patient.memberSince.day}/${patient.memberSince.month}/${patient.memberSince.year}',
             style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Patient ID: #${patient.id}',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+          ),
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildStatusBadge(
-                'ACTIVE',
-                const Color(0xFFEFF6FF),
-                const Color(0xFF2563EB),
-              ),
-              const SizedBox(width: 10),
-              _buildStatusBadge(
-                'Premium',
-                const Color(0xFFEEF2FF),
-                const Color(0xFF4338CA),
+                patient.isActive ? 'ACTIVE' : 'INACTIVE',
+                patient.isActive ? const Color(0xFFEFF6FF) : const Color(0xFFFFEAEA),
+                patient.isActive ? const Color(0xFF2563EB) : const Color(0xFFDC2626),
               ),
             ],
           ),
@@ -180,7 +209,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildHealthOverviewCard() {
+  Widget _buildHealthOverviewCard(Patient patient, HealthMetrics? metrics) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -206,11 +235,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          _buildHealthStat('72', 'bpm', 'Nhịp Tim'),
+          _buildHealthStat(
+            (metrics?.heartRate ?? patient.heartRate).toString(),
+            'bpm',
+            'Nhịp Tim',
+          ),
           const SizedBox(height: 16),
-          _buildHealthStat('120/80', '', 'Huyết Áp'),
+          _buildHealthStat(
+            metrics != null
+                ? '${metrics.bloodPressureSys}/${metrics.bloodPressureDia}'
+                : patient.bloodPressure,
+            '',
+            'Huyết Áp',
+          ),
           const SizedBox(height: 16),
-          _buildHealthStat('70', 'kg', 'Cân Nặng'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    (metrics?.weightKg ?? patient.weight).toStringAsFixed(1),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'kg',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (metrics?.weightTrend != null && metrics!.weightTrend.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: metrics.weightTrend.contains('-')
+                            ? const Color(0xFFEFF6EE)
+                            : const Color(0xFFFFEAEA),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        metrics.weightTrend,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: metrics.weightTrend.contains('-')
+                              ? const Color(0xFF047857)
+                              : const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Cân Nặng',
+                style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -395,6 +485,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       case 'notification_settings':
         screen = const NotificationSettingsScreen();
         break;
+      case 'logout':
+        _handleLogout();
+        return;
       default:
         return;
     }
@@ -402,5 +495,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context,
       FadePageRoute(builder: (context) => screen),
     );
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await Supabase.instance.client.auth.signOut();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          FadePageRoute(builder: (context) => const WelcomeScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi đăng xuất: $e')),
+        );
+      }
+    }
   }
 }

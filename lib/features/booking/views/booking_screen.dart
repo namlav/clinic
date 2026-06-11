@@ -52,7 +52,7 @@ class _BookingPageState extends State<BookingPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 14),
-                
+
                 /// HEADER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -82,7 +82,10 @@ class _BookingPageState extends State<BookingPage> {
 
                 /// SEARCH BOX
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(18),
@@ -125,52 +128,56 @@ class _BookingPageState extends State<BookingPage> {
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: List.generate(
-                    filters.length,
-                    (index) {
-                      bool isSelected = selectedFilter == index;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            selectedFilter = index;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF0057C2) : const Color(0xFFD9ECFF),
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (index == 0)
-                                const Padding(
-                                  padding: EdgeInsets.only(right: 6),
-                                  child: Icon(
-                                    Icons.tune,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              Text(
-                                filters[index],
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: isSelected ? Colors.white : const Color(0xFF5B6B81),
+                  children: List.generate(filters.length, (index) {
+                    bool isSelected = selectedFilter == index;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedFilter = index;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? const Color(0xFF0057C2)
+                              : const Color(0xFFD9ECFF),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (index == 0)
+                              const Padding(
+                                padding: EdgeInsets.only(right: 6),
+                                child: Icon(
+                                  Icons.tune,
+                                  size: 16,
+                                  color: Colors.white,
                                 ),
                               ),
-                            ],
-                          ),
+                            Text(
+                              filters[index],
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: isSelected
+                                    ? Colors.white
+                                    : const Color(0xFF5B6B81),
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  }),
                 ),
                 const SizedBox(height: 28),
 
-                /// DANH SÁCH BÁC SĨ 
+                /// DANH SÁCH BÁC SĨ
                 FutureBuilder<List<Map<String, dynamic>>>(
                   future: _doctorsFuture,
                   builder: (context, snapshot) {
@@ -178,12 +185,16 @@ class _BookingPageState extends State<BookingPage> {
                       return const Center(
                         child: Padding(
                           padding: EdgeInsets.all(24.0),
-                          child: CircularProgressIndicator(color: Color(0xFF0057C2)),
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF0057C2),
+                          ),
                         ),
                       );
                     }
-                    
-                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+
+                    if (snapshot.hasError ||
+                        !snapshot.hasData ||
+                        snapshot.data!.isEmpty) {
                       return const Center(
                         child: Padding(
                           padding: EdgeInsets.all(24.0),
@@ -201,35 +212,48 @@ class _BookingPageState extends State<BookingPage> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: doctors.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 18),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 18),
                       itemBuilder: (context, index) {
                         final doc = doctors[index];
-                        
+
                         if (index == 2) {
                           return _largeDoctorCard(
                             image: doc['avatarurl'] ?? "assets/images/ava1.jpg",
-                            name: (doc['fullname'] ?? "Bác sĩ").toString().replaceAll(' ', '\n'),
+                            name: (doc['fullname'] ?? "Bác sĩ")
+                                .toString()
+                                .replaceAll(' ', '\n'),
                             specialty: doc['title'] ?? "Chuyên gia y tế",
                             rating: (doc['rating'] ?? 5.0).toString(),
-                            experience: "${doc['experienceyears'] ?? 5}Y EXPERIENCE",
-                            bio: doc['bio'] ?? "Chuyên về thăm khám lâm sàng và điều trị nội khoa...",
+                            experience:
+                                "${doc['experienceyears'] ?? 5}Y EXPERIENCE",
+                            bio:
+                                doc['bio'] ??
+                                "Chuyên về thăm khám lâm sàng và điều trị nội khoa...",
                           );
                         }
 
                         return _doctorCard(
                           image: doc['avatarurl'] ?? "assets/images/ava1.jpg",
-                          name: (doc['fullname'] ?? "Bác sĩ").toString().replaceAll(' ', '\n'),
-                          specialty: (doc['title'] ?? "Chuyên khoa").toString().replaceAll(' ', '\n'),
+                          name: (doc['fullname'] ?? "Bác sĩ")
+                              .toString()
+                              .replaceAll(' ', '\n'),
+                          specialty: (doc['title'] ?? "Chuyên khoa")
+                              .toString()
+                              .replaceAll(' ', '\n'),
                           rating: (doc['rating'] ?? 5.0).toString(),
-                          experience: "${doc['experienceyears'] ?? 5}Y EXPERIENCE",
+                          experience:
+                              "${doc['experienceyears'] ?? 5}Y EXPERIENCE",
                           buttonText: "Đặt lịch",
-                          subtitle: index % 2 == 0 ? "North Wing" : "Next: Tomorrow",
+                          subtitle: index % 2 == 0
+                              ? "North Wing"
+                              : "Next: Tomorrow",
                         );
                       },
                     );
                   },
                 ),
-                
+
                 const SizedBox(height: 110),
               ],
             ),
@@ -308,12 +332,13 @@ class _BookingPageState extends State<BookingPage> {
                         width: 96,
                         height: 96,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Image.asset(
-                          "assets/images/ava1.jpg",
-                          width: 96,
-                          height: 96,
-                          fit: BoxFit.cover,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset(
+                              "assets/images/ava1.jpg",
+                              width: 96,
+                              height: 96,
+                              fit: BoxFit.cover,
+                            ),
                       ),
               ),
               const SizedBox(width: 16),
@@ -370,7 +395,9 @@ class _BookingPageState extends State<BookingPage> {
                 Row(
                   children: [
                     Icon(
-                      subtitle == "North Wing" ? Icons.location_on_outlined : Icons.calendar_today_outlined,
+                      subtitle == "North Wing"
+                          ? Icons.location_on_outlined
+                          : Icons.calendar_today_outlined,
                       size: 15,
                       color: const Color(0xFF6E7688),
                     ),
@@ -391,7 +418,10 @@ class _BookingPageState extends State<BookingPage> {
                     _smallAvatar("SJ"),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE7F0FF),
                         borderRadius: BorderRadius.circular(12),
@@ -413,7 +443,10 @@ class _BookingPageState extends State<BookingPage> {
                   backgroundColor: const Color(0xFF0057C2),
                   elevation: 8,
                   shadowColor: const Color(0x330057C2),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 14,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -502,7 +535,10 @@ class _BookingPageState extends State<BookingPage> {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE8F0FF),
                         borderRadius: BorderRadius.circular(14),
@@ -609,11 +645,7 @@ class _BookingPageState extends State<BookingPage> {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.star,
-            size: 14,
-            color: Color(0xFF0057C2),
-          ),
+          const Icon(Icons.star, size: 14, color: Color(0xFF0057C2)),
           const SizedBox(width: 3),
           Text(
             rating,
@@ -639,10 +671,7 @@ class _BookingPageState extends State<BookingPage> {
       child: Center(
         child: Text(
           text,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -658,11 +687,7 @@ class _BookingPageState extends State<BookingPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 22,
-            color: const Color(0xFFB1BAC8),
-          ),
+          Icon(icon, size: 22, color: const Color(0xFFB1BAC8)),
           const SizedBox(height: 4),
           Text(
             label,
@@ -701,11 +726,7 @@ class _BookingPageState extends State<BookingPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: Colors.white,
-            ),
+            Icon(icon, size: 20, color: Colors.white),
             const SizedBox(height: 4),
             Text(
               label,
