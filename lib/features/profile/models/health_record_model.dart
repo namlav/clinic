@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class HealthRecord {
   final String id;
   final String title;
@@ -5,6 +7,7 @@ class HealthRecord {
   final String date;
   final String fileSize;
   final String fileFormat;
+  final String fileUrl;
   final bool isDownloadable;
 
   HealthRecord({
@@ -14,6 +17,62 @@ class HealthRecord {
     required this.date,
     required this.fileSize,
     required this.fileFormat,
+    required this.fileUrl,
     required this.isDownloadable,
   });
+
+  factory HealthRecord.fromJson(Map<String, dynamic> json) {
+    return HealthRecord(
+      id: json['recordid']?.toString() ?? '',
+      title: json['recordtype'] ?? '',
+      icon: _getIconForType(json['recordtype'] ?? ''),
+      date: json['recorddate'] != null
+          ? DateTime.parse(json['recorddate']).toString().split(' ')[0]
+          : '',
+      fileSize: _formatFileSize(json['filesize']),
+      fileFormat: (json['filetype'] ?? 'PDF').toUpperCase(),
+      fileUrl: json['fileurl'] ?? '',
+      isDownloadable: true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'recordid': id,
+      'recordtype': title,
+      'recorddate': date,
+      'filetype': fileFormat.toLowerCase(),
+      'fileurl': fileUrl,
+    };
+  }
+
+  static String _getIconForType(String type) {
+    final typeMap = {
+      'blood_test': '🔬',
+      'xray': '🫁',
+      'prescription': '💊',
+      'urine_test': '🧪',
+    };
+    return typeMap[type.toLowerCase()] ?? '📄';
+  }
+
+  static String _formatFileSize(dynamic size) {
+    if (size == null) return '0 KB';
+    int bytes = int.tryParse(size.toString()) ?? 0;
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  static Future<List<HealthRecord>> fetch() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase.from('medicalrecords').select();
+      return (response as List)
+          .map((item) => HealthRecord.fromJson(item))
+          .toList();
+    } catch (e) {
+      throw Exception('Lỗi lấy hồ sơ y tế: $e');
+    }
+  }
 }

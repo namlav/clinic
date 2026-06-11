@@ -60,13 +60,15 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
 
           // Lưu DB public
           await supabase.from('users').upsert({
+            'userid': res.user!.id,
             'authid': res.user!.id,
             'fullname': widget.userData!['fullname'],
             'email': widget.userData!['email'],
             'phone': widget.userData!['phone'],
             'isactive': true,
             'joineddate': DateTime.now().toIso8601String(),
-          }, onConflict: 'authid');
+            'membershiptier': 'Standard',
+          }, onConflict: 'userid');
 
           await supabase.auth.signOut();
           Navigator.of(context).popUntil((route) => route.isFirst);

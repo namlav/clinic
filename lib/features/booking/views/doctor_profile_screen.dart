@@ -704,14 +704,18 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                             ),
                             title: Row(
                               children: [
-                                const Icon(Icons.error_outline,
-                                    color: Colors.red, size: 28),
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 28,
+                                ),
                                 const SizedBox(width: 8),
                                 const Text(
                                   'Khung giờ đã đầy',
                                   style: TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold),
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),

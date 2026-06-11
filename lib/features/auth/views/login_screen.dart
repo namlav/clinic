@@ -116,12 +116,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: _buildInput("Email", Icons.email_outlined),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập email';
+                    }
                     if (!RegExp(
                       r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                    ).hasMatch(value))
+                    ).hasMatch(value)) {
                       return 'Email không hợp lệ';
+                    }
                     return null;
                   },
                 ),
