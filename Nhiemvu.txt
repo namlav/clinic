@@ -1,0 +1,31 @@
+@Trương Ích Thái Duy: Module Authentication & Routing (Xác thực & Điều hướng)
+Nhiệm vụ chính: Làm kiểm tra danh tính và dẫn đường cho người dùng vào đúng giao diện của họ.
+Thư mục: lib/features/auth/
+Công việc chi tiết:
+- Nâng cấp luồng Đăng nhập/Đăng ký.
+- Rẽ nhánh: Sau khi Login thành công, gọi API kiểm tra Role. Nếu là Patient thì dùng Navigator.push đẩy vào Trang chủ bệnh nhân. Nếu là Doctor thì đẩy vào Trang chủ bác sĩ.
+- Xử lý màn hình quên mật khẩu và các thông báo đẩy (Notification) khi hệ thống có cập nhật.
+
+@Trần Ngọc Trúc Huỳnh Module Doctor Portal (Cổng thông tin Bác sĩ) 
+Nhiệm vụ chính: Đảm nhận toàn bộ nghiệp vụ mới mà giảng viên vừa yêu cầu dành riêng cho Bác sĩ.
+Thư mục: Tạo mới lib/features/doctor_portal/
+Công việc chi tiết:
+- Thiết kế màn hình Trang chủ riêng cho Bác sĩ: Hiển thị lịch khám trong ngày/tuần.
+- Thao tác nhận ca: Bác sĩ có thể bấm "Xác nhận nhận ca" (nếu khách chọn thanh toán sau) hoặc "Từ chối".
+- Nghiệp vụ cốt lõi: Sau khi khám xong, xây dựng Form để Bác sĩ nhập liệu Kết quả chẩn đoán và Đơn thuốc/Dịch vụ phát sinh. Bấm lưu để đẩy dữ liệu này vào bảng Medical_Records của bệnh nhân đó.
+
+@Mỹ Duyên Module Search, Booking & Payment (Khám phá & Giao dịch)
+Nhiệm vụ chính: Xây dựng luồng cốt lõi của Bệnh nhân từ lúc tìm kiếm đến lúc "chốt đơn".
+Thư mục: lib/features/home/, lib/features/booking/, lib/features/payment/
+Công việc chi tiết:
+Tìm kiếm nâng cao: Xây dựng bộ lọc để bệnh nhân có thể tìm theo Chuyên khoa, Tên bác sĩ, hoặc Tên dịch vụ (Khám tổng quát, Nhổ răng...).
+Đặt lịch: Hiển thị hồ sơ bác sĩ, cho phép chọn ngày/giờ (check trùng lịch) và chọn Dịch vụ muốn khám.
+Thanh toán: Thực hiện luồng thanh toán dựa trên tổng tiền của dịch vụ đã chọn, sau đó đổi trạng thái lịch khám thành Confirmed.
+
+@Trần Đức Huy Module Appointment History & Profile (Lịch sử & Hồ sơ y tế)
+Nhiệm vụ chính: Chăm sóc trải nghiệm Bệnh nhân sau khi đặt lịch và khám xong (Yêu cầu mới của giảng viên).
+Thư mục: lib/features/appointment/, lib/features/profile/
+Công việc chi tiết:
+- Quản lý danh sách lịch khám: Sắp tới, Đã hoàn thành, Đã hủy.
+- Chi tiết ca khám (Cốt lõi): Khi bệnh nhân bấm vào một ca khám "Đã hoàn thành", màn hình sẽ hiện chi tiết: Tên bác sĩ, Dịch vụ đã khám, và đặc biệt là kéo dữ liệu Kết quả chẩn đoán & Đơn thuốc (do @Trần Ngọc Trúc Huỳnh  vừa nhập) về để bệnh nhân đọc được.
+- Hoàn thiện nốt phần khai báo Thông tin cá nhân, Bảo hiểm y tế của bệnh nhân.
