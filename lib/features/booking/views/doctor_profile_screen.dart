@@ -36,21 +36,24 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
     try {
       final doctorId = widget.doctorData['doctorid'];
       if (doctorId == null) return;
-      
-      final dateStr = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
-      
+
+
+
+      final dateStr =
+          "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+
       final response = await Supabase.instance.client
           .from('appointments')
           .select('starttime')
           .eq('doctorid', doctorId)
           .eq('appointmentdate', dateStr)
           .neq('status', 'Cancelled');
-          
+
       final List<String> slots = (response as List).map((e) {
         final timeStr = e['starttime'].toString();
         return timeStr.length >= 5 ? timeStr.substring(0, 5) : timeStr;
       }).toList();
-      
+
       if (mounted) {
         setState(() {
           _bookedSlots = slots;
@@ -659,7 +662,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
             final time24 = _to24HourFormat(timeStr);
 
             // Nếu giờ này nằm trong danh sách đã đặt thì disable
-            if (_bookedSlots.contains(timeStr) || _bookedSlots.contains(time24)) {
+            if (_bookedSlots.contains(timeStr) ||
+                _bookedSlots.contains(time24)) {
               disabled = true;
             }
 
@@ -792,9 +796,11 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                         newAppointment['appointmentid'];
                     final int? specialtyId =
                         widget.doctorData['specialtyid'] as int?;
-                    final double consultationFee = double.tryParse(
-                            widget.doctorData['consultationfee']?.toString() ??
-                                '0') ??
+                    final double consultationFee =
+                        double.tryParse(
+                          widget.doctorData['consultationfee']?.toString() ??
+                              '0',
+                        ) ??
                         0;
 
                     if (mounted) {

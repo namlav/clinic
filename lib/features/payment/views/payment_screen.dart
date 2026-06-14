@@ -29,6 +29,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String selectedMethod = 'MoMo';
   final supabase = Supabase.instance.client;
   bool _isLoading = false;
+  bool _isPaying = false;
   Map<String, dynamic>? doctorData;
   Timer? _timer;
   int _remainingSeconds = 300; // 5 phút
@@ -66,7 +67,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
   }
 
   Future<void> _handleTimeout() async {
-    if (_isLoading) return; // Không hủy nếu đang xử lý thanh toán dở dang
+    if (_isPaying) return; // Không hủy nếu đang xử lý thanh toán dở dang
     setState(() => _isLoading = true);
     try {
       await supabase
@@ -124,7 +125,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isPaying = true;
+    });
     try {
       // Get numeric userid from users table using authid
       final userResponse = await supabase
@@ -223,22 +227,15 @@ class _PaymentScreenState extends State<PaymentScreen> {
         );
       }
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isPaying = false;
+      });
     }
   }
 
   Future<void> _cancelAndPop() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
-    try {
-      // Huỷ lịch hẹn nếu người dùng thoát mà chưa thanh toán
-      await supabase
-          .from('appointments')
-          .update({'status': 'Cancelled'})
-          .eq('appointmentid', widget.appointmentId);
-    } catch (e) {
-      print('Lỗi khi huỷ lịch hẹn do thoát: $e');
-    }
+    if (_isPaying) return; // Không cho phép thoát nếu đang xử lý thanh toán
     if (mounted) {
       Navigator.pop(context);
     }
@@ -247,7 +244,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading && doctorData == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return WillPopScope(
+        onWillPop: () async {
+          await _cancelAndPop();
+          return false;
+        },
+        child: const Scaffold(body: Center(child: CircularProgressIndicator())),
+      );
     }
 
     final String doctorName = doctorData?['fullname'] ?? 'Chưa rõ bác sĩ';
@@ -404,7 +407,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ],
                     ),
                     // Phí dịch vụ (nếu có)
-                    if (widget.serviceName != null) ...[  
+                    if (widget.serviceName != null) ...[
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -412,7 +415,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           Expanded(
                             child: Text(
                               widget.serviceName!,
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),

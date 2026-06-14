@@ -81,7 +81,7 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
     }
 
     if (!mounted) return;
-    Navigator.pushReplacement(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentScreen(
@@ -90,21 +90,9 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
           bookingDate: widget.bookingDate,
           bookingTime: widget.bookingTime,
           serviceName: _selectedServiceName,
-          servicePrice: _selectedServicePrice > 0 ? _selectedServicePrice : null,
-        ),
-      ),
-    );
-  }
-
-  void _skip() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PaymentScreen(
-          appointmentId: widget.appointmentId,
-          doctorId: widget.doctorId,
-          bookingDate: widget.bookingDate,
-          bookingTime: widget.bookingTime,
+          servicePrice: _selectedServicePrice > 0
+              ? _selectedServicePrice
+              : null,
         ),
       ),
     );
@@ -167,18 +155,7 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
                         ),
                       ),
                     ),
-                    // Nút bỏ qua ở góc phải
-                    GestureDetector(
-                      onTap: _skip,
-                      child: const Text(
-                        'Bỏ qua',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF6E7688),
-                        ),
-                      ),
-                    ),
+                    const SizedBox(width: 20),
                   ],
                 ),
               ),
@@ -197,12 +174,15 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline,
-                          size: 18, color: Color(0xFF0057C2)),
+                      const Icon(
+                        Icons.info_outline,
+                        size: 18,
+                        color: Color(0xFF0057C2),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          'Bạn có thể chọn thêm dịch vụ để cộng vào phí khám, hoặc bấm "Bỏ qua" để tiếp tục.',
+                          'Vui lòng chọn ít nhất một dịch vụ y tế để tiếp tục đặt lịch!.',
                           style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF0057C2),
@@ -226,192 +206,180 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
                         ),
                       )
                     : _services.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.medical_services_outlined,
-                                    size: 56, color: Color(0xFFB5BDCA)),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'Không có dịch vụ nào\ncho chuyên khoa này',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Color(0xFF6E7688),
-                                    height: 1.5,
-                                  ),
+                    ? const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.medical_services_outlined,
+                              size: 56,
+                              color: Color(0xFFB5BDCA),
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Không có dịch vụ nào\ncho chuyên khoa này',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF6E7688),
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: _services.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final serv = _services[index];
+                          final bool isSelected =
+                              _selectedServiceId == serv['serviceid'];
+                          final double price =
+                              double.tryParse(
+                                serv['price']?.toString() ?? '0',
+                              ) ??
+                              0;
+
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (isSelected) {
+                                  // Bỏ chọn nếu tap lại
+                                  _selectedServiceId = null;
+                                  _selectedServiceName = null;
+                                  _selectedServicePrice = 0;
+                                } else {
+                                  _selectedServiceId = serv['serviceid'];
+                                  _selectedServiceName = serv['servicename'];
+                                  _selectedServicePrice = price;
+                                }
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? const Color(0xFF0057C2)
+                                      : Colors.transparent,
+                                  width: 2,
                                 ),
-                                const SizedBox(height: 24),
-                                ElevatedButton(
-                                  onPressed: _skip,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF0057C2),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 32, vertical: 14),
-                                    shape: RoundedRectangleBorder(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: isSelected
+                                        ? const Color(0x220057C2)
+                                        : Colors.black.withOpacity(0.04),
+                                    blurRadius: isSelected ? 16 : 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  // ICON
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFF0057C2)
+                                          : const Color(0xFFEAF2FF),
                                       borderRadius: BorderRadius.circular(14),
                                     ),
+                                    child: Icon(
+                                      Icons.medical_services_outlined,
+                                      color: isSelected
+                                          ? Colors.white
+                                          : const Color(0xFF0057C2),
+                                      size: 22,
+                                    ),
                                   ),
-                                  child: const Text('Tiếp tục đặt lịch',
-                                      style: TextStyle(color: Colors.white)),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: _services.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final serv = _services[index];
-                              final bool isSelected =
-                                  _selectedServiceId == serv['serviceid'];
-                              final double price = double.tryParse(
-                                      serv['price']?.toString() ?? '0') ??
-                                  0;
-
-                              return GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    if (isSelected) {
-                                      // Bỏ chọn nếu tap lại
-                                      _selectedServiceId = null;
-                                      _selectedServiceName = null;
-                                      _selectedServicePrice = 0;
-                                    } else {
-                                      _selectedServiceId = serv['serviceid'];
-                                      _selectedServiceName =
-                                          serv['servicename'];
-                                      _selectedServicePrice = price;
-                                    }
-                                  });
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(18),
-                                    border: Border.all(
+                                  const SizedBox(width: 14),
+                                  // INFO
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          serv['servicename'] ?? 'Dịch vụ',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: isSelected
+                                                ? const Color(0xFF0057C2)
+                                                : const Color(0xFF1A1F36),
+                                          ),
+                                        ),
+                                        if (serv['description'] != null &&
+                                            serv['description']
+                                                .toString()
+                                                .isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            serv['description'],
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFF6E7688),
+                                              height: 1.4,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          _formatPrice(serv['price']),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF0057C2),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  // CHECKBOX
+                                  AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
                                       color: isSelected
                                           ? const Color(0xFF0057C2)
                                           : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
+                                      border: Border.all(
                                         color: isSelected
-                                            ? const Color(0x220057C2)
-                                            : Colors.black.withOpacity(0.04),
-                                        blurRadius: isSelected ? 16 : 8,
-                                        offset: const Offset(0, 4),
+                                            ? const Color(0xFF0057C2)
+                                            : const Color(0xFFB5BDCA),
+                                        width: 2,
                                       ),
-                                    ],
+                                    ),
+                                    child: isSelected
+                                        ? const Icon(
+                                            Icons.check,
+                                            size: 14,
+                                            color: Colors.white,
+                                          )
+                                        : null,
                                   ),
-                                  child: Row(
-                                    children: [
-                                      // ICON
-                                      Container(
-                                        width: 48,
-                                        height: 48,
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? const Color(0xFF0057C2)
-                                              : const Color(0xFFEAF2FF),
-                                          borderRadius:
-                                              BorderRadius.circular(14),
-                                        ),
-                                        child: Icon(
-                                          Icons.medical_services_outlined,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : const Color(0xFF0057C2),
-                                          size: 22,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      // INFO
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              serv['servicename'] ??
-                                                  'Dịch vụ',
-                                              style: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w700,
-                                                color: isSelected
-                                                    ? const Color(0xFF0057C2)
-                                                    : const Color(0xFF1A1F36),
-                                              ),
-                                            ),
-                                            if (serv['description'] != null &&
-                                                serv['description']
-                                                    .toString()
-                                                    .isNotEmpty) ...[
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                serv['description'],
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  color: Color(0xFF6E7688),
-                                                  height: 1.4,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              _formatPrice(serv['price']),
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                                color: Color(0xFF0057C2),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // CHECKBOX
-                                      AnimatedContainer(
-                                        duration:
-                                            const Duration(milliseconds: 200),
-                                        width: 24,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isSelected
-                                              ? const Color(0xFF0057C2)
-                                              : Colors.transparent,
-                                          border: Border.all(
-                                            color: isSelected
-                                                ? const Color(0xFF0057C2)
-                                                : const Color(0xFFB5BDCA),
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: isSelected
-                                            ? const Icon(Icons.check,
-                                                size: 14, color: Colors.white)
-                                            : null,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
               ),
 
               // BOTTOM SUMMARY + BUTTON
               Container(
-                padding:
-                    const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: const BorderRadius.only(
@@ -433,16 +401,24 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Phí khám',
-                            style: TextStyle(
-                                fontSize: 14, color: Color(0xFF6E7688))),
-                        Text(_formatPrice(widget.consultationFee),
-                            style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF1A1F36))),
+                        const Text(
+                          'Phí khám',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF6E7688),
+                          ),
+                        ),
+                        Text(
+                          _formatPrice(widget.consultationFee),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A1F36),
+                          ),
+                        ),
                       ],
                     ),
+
                     if (_selectedServiceId != null) ...[
                       const SizedBox(height: 6),
                       Row(
@@ -452,15 +428,20 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
                             child: Text(
                               _selectedServiceName ?? 'Dịch vụ',
                               style: const TextStyle(
-                                  fontSize: 14, color: Color(0xFF6E7688)),
+                                fontSize: 14,
+                                color: Color(0xFF6E7688),
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          Text('+${_formatPrice(_selectedServicePrice)}',
-                              style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFF0057C2))),
+                          Text(
+                            '+${_formatPrice(_selectedServicePrice)}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0057C2),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -471,13 +452,15 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
                         const Text(
                           'Tổng cộng',
                           style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1F36)),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1A1F36),
+                          ),
                         ),
                         Text(
                           _formatPrice(
-                              widget.consultationFee + _selectedServicePrice),
+                            widget.consultationFee + _selectedServicePrice,
+                          ),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
@@ -491,7 +474,9 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: _isConfirming ? null : _proceedToPayment,
+                        onPressed: (_isConfirming || _selectedServiceId == null)
+                            ? null
+                            : _proceedToPayment,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF0057C2),
                           elevation: 8,
@@ -502,11 +487,12 @@ class _ServiceSelectionScreenState extends State<ServiceSelectionScreen> {
                         ),
                         child: _isConfirming
                             ? const CircularProgressIndicator(
-                                color: Colors.white)
+                                color: Colors.white,
+                              )
                             : Text(
                                 _selectedServiceId != null
                                     ? 'Tiếp tục thanh toán'
-                                    : 'Tiếp tục không chọn dịch vụ',
+                                    : 'Vui lòng chọn dịch vụ',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,

@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'appointmentid, appointmentdate, starttime, endtime, doctors(fullname, title, avatarurl)',
           )
           .eq('userid', numericUserId)
-          .neq('status', 'Cancelled')
+          .eq('status', 'Confirmed')
           .gte('appointmentdate', today)
           .order('appointmentdate', ascending: true)
           .order('starttime', ascending: true)
