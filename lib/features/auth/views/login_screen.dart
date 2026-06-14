@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'create_new_password_screen.dart';
-import '../../home/views/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -51,7 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (role == 'doctor') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const DoctorHomeScreen()),//doctor_screen
+          MaterialPageRoute(
+            builder: (context) => const DoctorHomeScreen(),
+          ), //doctor_screen
         );
       } else {
         Navigator.pushReplacement(
@@ -77,7 +78,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (response.user != null) {
           if (!mounted) return;
-          await _handleRoleBasedNavigation(response.user!.id);
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainApp()),
+          );
         }
       } on AuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -144,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(35),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -161,12 +165,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       hint: "name@email.com",
                       icon: Icons.email_outlined,
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return "Vui lòng nhập email";
+                        }
                         if (!RegExp(
                           r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                        ).hasMatch(val))
+                        ).hasMatch(val)) {
                           return "Email không hợp lệ";
+                        }
                         return null;
                       },
                     ),

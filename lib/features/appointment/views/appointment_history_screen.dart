@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../profile/models/medical_appointment_model.dart';
+import '../../../widgets/fade_page_route.dart';
+import 'appointment_detail_screen.dart';
 
 class AppointmentHistoryScreen extends StatefulWidget {
   const AppointmentHistoryScreen({super.key});
@@ -86,9 +88,9 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
 
             var matchesFilter = true;
             if (selectedFilter == 'Hoàn thành') {
-              matchesFilter = apt.status == 'Completed';
+              matchesFilter = !apt.isUpcoming;
             } else if (selectedFilter == 'Sắp tới') {
-              matchesFilter = apt.status == 'Confirmed';
+              matchesFilter = apt.isUpcoming;
             }
 
             return matchesSearch && matchesFilter;
@@ -510,128 +512,139 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
   }
 
   Widget _buildAppointmentTile(MedicalAppointment appointment) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withAlpha(20),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          FadePageRoute(
+            builder: (context) =>
+                AppointmentDetailScreen(appointment: appointment),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 26,
-                backgroundColor: const Color(0xFFEFF6FF),
-                child: Text(
-                  appointment.doctorName
-                      .split(' ')
-                      .take(2)
-                      .map((word) => word[0])
-                      .join(),
-                  style: const TextStyle(
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withAlpha(20),
+              blurRadius: 18,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: const Color(0xFFEFF6FF),
+                  child: Text(
+                    appointment.doctorName
+                        .split(' ')
+                        .take(2)
+                        .map((word) => word[0])
+                        .join(),
+                    style: const TextStyle(
+                      color: Color(0xFF2563EB),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        appointment.doctorName,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        appointment.specialization,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        appointment.hospital,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getStatusBackgroundColor(appointment.status),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Text(
+                    appointment.status,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: _getStatusTextColor(appointment.status),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.calendar_today,
+                    size: 16,
                     color: Color(0xFF2563EB),
-                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      appointment.doctorName,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF111827),
-                      ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _formatDate(appointment.appointmentDate),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF4B5563),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      appointment.specialization,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      appointment.hospital,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF9CA3AF),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: _getStatusBackgroundColor(appointment.status),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Text(
-                  appointment.status,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: _getStatusTextColor(appointment.status),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
+                Text(
+                  appointment.notes,
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                 ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.calendar_today,
-                  size: 16,
-                  color: Color(0xFF2563EB),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _formatDate(appointment.appointmentDate),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF4B5563),
-                  ),
-                ),
-              ),
-              Text(
-                appointment.notes,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

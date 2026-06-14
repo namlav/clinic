@@ -278,7 +278,7 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
               specialty: specialty,
               date: appointment['appointmentdate'] ?? '',
               time:
-                  '${appointment['starttime']?.toString().split('.').first ?? ''}',
+                  appointment['starttime']?.toString().split('.').first ?? '',
               location: appointment['roomname'] ?? 'Phòng Khám',
               imageUrl: avatarUrl,
               status: 'Hoàn thành',
