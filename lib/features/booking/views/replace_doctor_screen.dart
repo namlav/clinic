@@ -25,10 +25,7 @@ class MyApp extends StatelessWidget {
 class DoctorReplacementPage extends StatefulWidget {
   final int appointmentId;
 
-  const DoctorReplacementPage({
-    super.key,
-    required this.appointmentId,
-  });
+  const DoctorReplacementPage({super.key, required this.appointmentId});
 
   @override
   State<DoctorReplacementPage> createState() => _DoctorReplacementPageState();
@@ -36,7 +33,7 @@ class DoctorReplacementPage extends StatefulWidget {
 
 class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
   int selectedNav = 2;
-  
+
   late Future<Map<String, dynamic>?> _replacementDataFuture;
 
   @override
@@ -57,7 +54,8 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
 
       if (appointmentResponse == null) return null;
 
-      final originalDoctor = appointmentResponse['doctors'] as Map<String, dynamic>?;
+      final originalDoctor =
+          appointmentResponse['doctors'] as Map<String, dynamic>?;
       if (originalDoctor == null) return null;
 
       final int originalDoctorId = appointmentResponse['doctorid'];
@@ -72,9 +70,11 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
           .order('rating', ascending: false)
           .limit(1);
 
-      if (replacementResponse != null && (replacementResponse as List).isNotEmpty) {
-        final replacementDoctor = replacementResponse.first as Map<String, dynamic>;
-        
+      if (replacementResponse != null &&
+          (replacementResponse as List).isNotEmpty) {
+        final replacementDoctor =
+            replacementResponse.first as Map<String, dynamic>;
+
         return {
           'original_doctor_name': originalDoctorName,
           'replacement_doctor': replacementDoctor,
@@ -100,7 +100,9 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
               );
             }
 
-            if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+            if (snapshot.hasError ||
+                !snapshot.hasData ||
+                snapshot.data == null) {
               return const Center(
                 child: Text(
                   "Không tìm thấy thông tin đề xuất bác sĩ thay thế phù hợp.",
@@ -112,8 +114,10 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
 
             final data = snapshot.data!;
             final String originalName = data['original_doctor_name'];
-            final Map<String, dynamic> replacementDoc = data['replacement_doctor'];
-            final Map<String, dynamic>? specialtyInfo = replacementDoc['specialties'];
+            final Map<String, dynamic> replacementDoc =
+                data['replacement_doctor'];
+            final Map<String, dynamic>? specialtyInfo =
+                replacementDoc['specialties'];
 
             return Column(
               children: [
@@ -130,7 +134,7 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
                         _buildAlertBanner(originalName),
                         const SizedBox(height: 28),
 
-                        /// CARD 
+                        /// CARD
                         _buildDoctorCard(replacementDoc, specialtyInfo),
                         const SizedBox(height: 34),
 
@@ -217,7 +221,8 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
                     style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const TextSpan(
-                    text: " hiện bận đột xuất. Để không gián đoạn việc thăm khám, chúng tôi đề xuất bác sĩ thay thế có trình độ tương đương.",
+                    text:
+                        " hiện bận đột xuất. Để không gián đoạn việc thăm khám, chúng tôi đề xuất bác sĩ thay thế có trình độ tương đương.",
                   ),
                 ],
               ),
@@ -228,14 +233,21 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
     );
   }
 
-  Widget _buildDoctorCard(Map<String, dynamic> doctor, Map<String, dynamic>? specialty) {
+  Widget _buildDoctorCard(
+    Map<String, dynamic> doctor,
+    Map<String, dynamic>? specialty,
+  ) {
     final String avatarUrl = doctor['avatarurl'] ?? "assets/images/ava1.jpg";
     final String fullname = doctor['fullname'] ?? "Bác sĩ thay thế";
-    final String specialtyName = specialty != null ? specialty['specialtyname'] : (doctor['title'] ?? "Khoa Nội Tổng Quát");
+    final String specialtyName = specialty != null
+        ? specialty['specialtyname']
+        : (doctor['title'] ?? "Khoa Nội Tổng Quát");
     final String experienceYears = "${doctor['experienceyears'] ?? 10} năm";
     final String rating = (doctor['rating'] ?? 5.0).toString();
     final String education = doctor['education'] ?? "Thạc sĩ Y khoa";
-    final String bio = doctor['bio'] ?? '"Tôi cam kết mang lại sự chăm sóc tận tâm và thấu đáo nhất cho mọi bệnh nhân, đảm bảo quá trình điều trị của bạn không bị gián đoạn."';
+    final String bio =
+        doctor['bio'] ??
+        '"Tôi cam kết mang lại sự chăm sóc tận tâm và thấu đáo nhất cho mọi bệnh nhân, đảm bảo quá trình điều trị của bạn không bị gián đoạn."';
 
     return Container(
       decoration: BoxDecoration(
@@ -260,7 +272,10 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
                 top: 18,
                 left: 18,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 9,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF004B9A),
                     borderRadius: BorderRadius.circular(24),
@@ -432,7 +447,9 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Đã xác nhận thay đổi bác sĩ thành công!")),
+                const SnackBar(
+                  content: Text("Đã xác nhận thay đổi bác sĩ thành công!"),
+                ),
               );
               Navigator.pop(context);
             }
@@ -478,7 +495,9 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
 
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Đã hủy lịch hẹn và tiến hành hoàn tiền.")),
+                const SnackBar(
+                  content: Text("Đã hủy lịch hẹn và tiến hành hoàn tiền."),
+                ),
               );
               Navigator.pop(context);
             }
@@ -551,7 +570,10 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
             },
             child: isSelected
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0057C2),
                       borderRadius: BorderRadius.circular(18),
@@ -605,10 +627,7 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
 }
 
 class CustomClipRRect extends StatelessWidget {
-  const CustomClipRRect({
-    super.key,
-    required this.avatarUrl,
-  });
+  const CustomClipRRect({super.key, required this.avatarUrl});
 
   final String avatarUrl;
 
@@ -627,15 +646,10 @@ class CustomClipRRect extends StatelessWidget {
             ? Image.network(
                 avatarUrl,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Image.asset(
-                  "assets/images/ava1.jpg",
-                  fit: BoxFit.cover,
-                ),
+                errorBuilder: (context, error, stackTrace) =>
+                    Image.asset("assets/images/ava1.jpg", fit: BoxFit.cover),
               )
-            : Image.asset(
-                "assets/images/ava1.jpg",
-                fit: BoxFit.cover,
-              ),
+            : Image.asset("assets/images/ava1.jpg", fit: BoxFit.cover),
       ),
     );
   }

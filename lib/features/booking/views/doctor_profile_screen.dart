@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../payment/views/payment_screen.dart';
 
 class DoctorProfilePage extends StatefulWidget {
   final Map<String, dynamic> doctorData;
@@ -11,8 +12,14 @@ class DoctorProfilePage extends StatefulWidget {
 }
 
 class _DoctorProfilePageState extends State<DoctorProfilePage> {
-  int selectedDay = 17;
-  int selectedTimeIndex = 1;
+  DateTime currentMonth = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
+  DateTime selectedDate = DateTime.now();
+  int selectedTimeIndex = -1; // Đổi thành -1 để bắt buộc người dùng tự chọn giờ
+  bool _isConfirming = false; // Biến trạng thái để khóa nút khi đang xử lý
   bool _isActive = true; // Mặc định là cho phép
 
   @override
@@ -80,7 +87,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
     {'time': '11:15', 'disabled': false},
     {'time': '01:45', 'disabled': false},
     {'time': '03:00', 'disabled': false},
-    {'time': '04:30', 'disabled': true},
+    {'time': '04:30', 'disabled': false},
     {'time': '05:15', 'disabled': false},
   ];
 
@@ -375,6 +382,16 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   }
 
   Widget _buildCalendarSection() {
+    final int daysInMonth = DateUtils.getDaysInMonth(
+      currentMonth.year,
+      currentMonth.month,
+    );
+    final int firstWeekday = DateTime(
+      currentMonth.year,
+      currentMonth.month,
+      1,
+    ).weekday;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -406,19 +423,55 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Tháng 12/2026",
-                    style: TextStyle(
+                  Text(
+                    "Tháng ${currentMonth.month}/${currentMonth.year}",
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1A1F36),
                     ),
                   ),
                   Row(
-                    children: const [
-                      Icon(Icons.chevron_left, color: Color(0xFFB0B8C5)),
-                      SizedBox(width: 4),
-                      Icon(Icons.chevron_right, color: Color(0xFFB0B8C5)),
+                    children: [
+                      GestureDetector(
+                        onTap:
+                            (currentMonth.year == DateTime.now().year &&
+                                currentMonth.month == DateTime.now().month)
+                            ? null
+                            : () {
+                                setState(() {
+                                  currentMonth = DateTime(
+                                    currentMonth.year,
+                                    currentMonth.month - 1,
+                                    1,
+                                  );
+                                });
+                              },
+                        child: Icon(
+                          Icons.chevron_left,
+                          color:
+                              (currentMonth.year == DateTime.now().year &&
+                                  currentMonth.month == DateTime.now().month)
+                              ? Colors.grey[300]
+                              : const Color(0xFFB0B8C5),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            currentMonth = DateTime(
+                              currentMonth.year,
+                              currentMonth.month + 1,
+                              1,
+                            );
+                          });
+                        },
+                        child: const Icon(
+                          Icons.chevron_right,
+                          color: Color(0xFFB0B8C5),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -447,22 +500,48 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
               const SizedBox(height: 16),
 
               /// DAYS
-              Wrap(
-                spacing: 10,
-                runSpacing: 12,
-                children: List.generate(17, (index) {
-                  int day = index + 8;
-                  bool isSelected = day == selectedDay;
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                ),
+                itemCount: daysInMonth + firstWeekday - 1,
+                itemBuilder: (context, index) {
+                  if (index < firstWeekday - 1) {
+                    return const SizedBox.shrink();
+                  }
+                  int day = index - (firstWeekday - 1) + 1;
+
+                  DateTime currentDay = DateTime(
+                    currentMonth.year,
+                    currentMonth.month,
+                    day,
+                  );
+                  DateTime today = DateTime(
+                    DateTime.now().year,
+                    DateTime.now().month,
+                    DateTime.now().day,
+                  );
+                  bool isPastDay = currentDay.isBefore(today);
+
+                  bool isSelected =
+                      selectedDate.year == currentMonth.year &&
+                      selectedDate.month == currentMonth.month &&
+                      selectedDate.day == day;
 
                   return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedDay = day;
-                      });
-                    },
+                    onTap: isPastDay
+                        ? null
+                        : () {
+                            setState(() {
+                              selectedDate = currentDay;
+                              selectedTimeIndex = -1; // Reset giờ khi đổi ngày
+                            });
+                          },
                     child: Container(
-                      width: 36,
-                      height: 40,
                       decoration: BoxDecoration(
                         color: isSelected
                             ? const Color(0xFF0057C2)
@@ -477,7 +556,9 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                             fontWeight: isSelected
                                 ? FontWeight.w700
                                 : FontWeight.w500,
-                            color: isSelected
+                            color: isPastDay
+                                ? Colors.grey[400]
+                                : isSelected
                                 ? Colors.white
                                 : const Color(0xFF1A1F36),
                           ),
@@ -485,7 +566,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                       ),
                     ),
                   );
-                }),
+                },
               ),
             ],
           ),
@@ -519,6 +600,30 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           ),
           itemBuilder: (context, index) {
             bool disabled = timeSlots[index]['disabled'];
+
+            // Vô hiệu hóa các khung giờ trong ngày hôm nay đã trôi qua
+            DateTime now = DateTime.now();
+            if (selectedDate.year == now.year &&
+                selectedDate.month == now.month &&
+                selectedDate.day == now.day) {
+              final timeStr = timeSlots[index]['time'];
+              final parts = timeStr.split(':');
+              int hour = int.parse(parts[0]);
+              int minute = int.parse(parts[1]);
+              if (hour < 8) hour += 12;
+
+              DateTime slotTime = DateTime(
+                selectedDate.year,
+                selectedDate.month,
+                selectedDate.day,
+                hour,
+                minute,
+              );
+              if (slotTime.isBefore(now)) {
+                disabled = true;
+              }
+            }
+
             bool isSelected = selectedTimeIndex == index;
 
             return GestureDetector(
@@ -576,81 +681,172 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
         width: double.infinity,
         height: 62,
         child: ElevatedButton(
-          onPressed: () async {
-            if (!_isActive) {
-              _showRestrictedDialog();
-              return;
-            }
-            final String selectedTime = timeSlots[selectedTimeIndex]['time'];
-            final String appointmentDate = "2026-12-$selectedDay";
+          onPressed: (selectedTimeIndex == -1 || _isConfirming)
+              ? null
+              : () async {
+                  setState(() {
+                    _isConfirming = true;
+                  });
+                  final String selectedTime =
+                      timeSlots[selectedTimeIndex]['time'];
+                  final String appointmentDate =
+                      "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
 
-            final int doctorId = widget.doctorData['doctorid'] ?? 0;
-            //loading
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) =>
-                  const Center(child: CircularProgressIndicator()),
-            );
+                  final int doctorId = widget.doctorData['doctorid'] ?? 0;
+                  try {
+                    // 1. Lấy AuthId (UUID) của phiên đăng nhập hiện tại từ hệ thống Auth
+                    final currentUser =
+                        Supabase.instance.client.auth.currentUser;
+                    if (currentUser == null) {
+                      throw Exception("Vui lòng đăng nhập lại để tiếp tục!");
+                    }
+                    final String authId = currentUser.id;
 
-            try {
-              await Supabase.instance.client.from('appointments').insert({
-                'doctorid': doctorId,
-                'appointmentdate': appointmentDate,
-                'starttime': "$selectedTime:00",
-                'endtime': "$selectedTime:00",
-                'status': 'Pending',
-                'createdat': DateTime.now().toIso8601String(),
-              });
+                    // 2. Truy vấn vào bảng users để lấy ra UserId (số nguyên) tương ứng
 
-              if (!mounted) return;
-              Navigator.pop(context); // Đóng loading
+                    final userData = await Supabase.instance.client
+                        .from('users')
+                        .select('userid')
+                        .eq('authid', authId)
+                        .single();
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Đặt lịch hẹn khám thành công!"),
-                  backgroundColor: Colors.green,
-                ),
-              );
-              Navigator.pop(context); // Quay lại trang trước
-            } catch (e) {
-              if (!mounted) return;
-              Navigator.pop(context); // Đóng loading
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("Lỗi hệ thống: $e"),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
+                    final int userId = userData['userid'];
+
+                    // 3. Thực hiện lệnh Insert kèm theo đúng trường userid
+                    final newAppointment = await Supabase.instance.client
+                        .from('appointments')
+                        .insert({
+                          'userid':
+                              userId, // 👉 Dòng quan trọng nhất để vượt qua RLS
+                          'doctorid': doctorId,
+                          'appointmentdate': appointmentDate,
+                          'starttime': "$selectedTime:00",
+                          'endtime': "$selectedTime:00",
+                          'status': 'Pending',
+                          'createdat': DateTime.now().toIso8601String(),
+                        })
+                        .select()
+                        .single();
+
+                    final int newAppointmentId =
+                        newAppointment['appointmentid'];
+
+                    if (mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PaymentScreen(
+                            appointmentId: newAppointmentId,
+                            doctorId: doctorId,
+                            bookingDate: appointmentDate,
+                            bookingTime: selectedTime,
+                          ),
+                        ),
+                      ).then((_) {
+                        // Mở khóa nút lại nếu người dùng bấm "Back" từ trang thanh toán
+                        if (mounted) {
+                          setState(() => _isConfirming = false);
+                        }
+                      });
+                    }
+                  } on PostgrestException catch (e) {
+                    if (mounted) {
+                      // Bắt lỗi 23505: Trùng lịch từ Supabase
+                      if (e.code == '23505' ||
+                          e.message.contains('unique_appointment_slot') ||
+                          e.message.contains('duplicate key')) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            title: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 28,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Khung giờ đã đầy',
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            content: const Text(
+                              'Rất tiếc, khung giờ này vừa có người nhanh tay đặt trước. Vui lòng chọn giờ khác!',
+                              style: TextStyle(fontSize: 15),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: const Color(0xFF003D81),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text('Đã hiểu'),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Lỗi CSDL: ${e.message}")),
+                        );
+                      }
+                      setState(() => _isConfirming = false);
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Lỗi hệ thống: $e")),
+                      );
+                      setState(() => _isConfirming = false);
+                    }
+                  }
+                },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF0057C2),
-            elevation: 8,
-            shadowColor: const Color(0x330057C2),
+            backgroundColor: selectedTimeIndex == -1
+                ? Colors.grey[400]
+                : const Color(0xFF0057C2),
+            elevation: selectedTimeIndex == -1 ? 0 : 8,
+            shadowColor: selectedTimeIndex == -1
+                ? Colors.transparent
+                : const Color(0x330057C2),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
           ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Xác nhận cuộc hẹn",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
+          child: _isConfirming
+              ? const CircularProgressIndicator(color: Colors.white)
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Xác nhận cuộc hẹn",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Icon(
+                      Icons.calendar_month_outlined,
+                      size: 22,
+                      color: Colors.white,
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(width: 12),
-              Icon(
-                Icons.calendar_month_outlined,
-                size: 22,
-                color: Colors.white,
-              ),
-            ],
-          ),
         ),
       ),
     );
