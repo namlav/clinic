@@ -1,9 +1,9 @@
+import 'package:clinic/main.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'create_new_password_screen.dart';
-import '../../home/views/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const MainApp()),
           );
         }
       } on AuthException catch (e) {
@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 borderRadius: BorderRadius.circular(35),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -133,12 +133,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       hint: "name@email.com",
                       icon: Icons.email_outlined,
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return "Vui lòng nhập email";
+                        }
                         if (!RegExp(
                           r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                        ).hasMatch(val))
+                        ).hasMatch(val)) {
                           return "Email không hợp lệ";
+                        }
                         return null;
                       },
                     ),

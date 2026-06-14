@@ -54,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .order('starttime', ascending: true)
           .limit(1)
           .maybeSingle();
-      return response as Map<String, dynamic>?;
+      return response;
     } catch (e) {
       return null;
     }
@@ -353,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     specialtyName,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Colors.white.withOpacity(0.82),
+                                      color: Colors.white.withValues(alpha: 0.82),
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
@@ -379,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(18),
-                                  color: Colors.white.withOpacity(0.12),
+                                  color: Colors.white.withValues(alpha: 0.12),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -389,7 +389,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         Icon(
                                           Icons.calendar_today_outlined,
                                           size: 14,
-                                          color: Colors.white.withOpacity(0.85),
+                                          color: Colors.white.withValues(alpha: 0.85),
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
@@ -398,8 +398,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                             fontSize: 11,
                                             letterSpacing: 1,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(
-                                              0.75,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.75,
                                             ),
                                           ),
                                         ),
@@ -430,7 +430,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(18),
-                                  color: Colors.white.withOpacity(0.12),
+                                  color: Colors.white.withValues(alpha: 0.12),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         Icon(
                                           Icons.access_time_outlined,
                                           size: 14,
-                                          color: Colors.white.withOpacity(0.85),
+                                          color: Colors.white.withValues(alpha: 0.85),
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
@@ -449,8 +449,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                             fontSize: 11,
                                             letterSpacing: 1,
                                             fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(
-                                              0.75,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.75,
                                             ),
                                           ),
                                         ),
@@ -678,7 +678,7 @@ class _CategoryItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
