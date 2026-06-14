@@ -76,12 +76,12 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
 
         final status = appointment['status'] as String? ?? '';
 
-        // Bỏ qua các lịch đã hủy
-        if (status == 'Cancelled') continue;
+        // Bỏ qua các lịch đã hủy hoặc đang chờ thanh toán
+        if (status == 'Cancelled' || status == 'Pending') continue;
 
         if (status == 'Completed') {
           completed.add(appointment);
-        } else if (status == 'Confirmed' || status == 'Pending') {
+        } else if (status == 'Confirmed') {
           // Kiểm tra ngày hẹn đã qua ngày hôm nay chưa
           bool pastDay = false;
           try {
@@ -142,6 +142,35 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
       print(
         'Upcoming count: ${upcoming.length}, Completed count: ${completed.length}',
       );
+
+      // Sắp xếp lịch hẹn
+      upcoming.sort((a, b) {
+        try {
+          final dateA = DateTime.parse(
+            '${a['appointmentdate']} ${a['starttime']}',
+          );
+          final dateB = DateTime.parse(
+            '${b['appointmentdate']} ${b['starttime']}',
+          );
+          return dateA.compareTo(dateB); // Tăng dần (gần nhất ở trên)
+        } catch (_) {
+          return 0;
+        }
+      });
+
+      completed.sort((a, b) {
+        try {
+          final dateA = DateTime.parse(
+            '${a['appointmentdate']} ${a['starttime']}',
+          );
+          final dateB = DateTime.parse(
+            '${b['appointmentdate']} ${b['starttime']}',
+          );
+          return dateB.compareTo(dateA); // Giảm dần (mới hoàn thành ở trên)
+        } catch (_) {
+          return 0;
+        }
+      });
 
       setState(() {
         upcomingAppointments = upcoming;

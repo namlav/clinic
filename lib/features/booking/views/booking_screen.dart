@@ -12,27 +12,43 @@ class _BookingPageState extends State<BookingPage> {
   int selectedFilter = 0;
   int selectedBottomNav = 1;
 
-  final List<String> filters = [
-    "Tất cả",
-    "Tim mạch",
-    "Có lịch hôm nay",
-    "Đánh giá cao",
-    "Da liễu",
-  ];
+  List<Map<String, dynamic>> filters = [{'id': -1, 'name': 'Tất cả'}];
 
   late Future<List<Map<String, dynamic>>> _doctorsFuture;
 
   @override
   void initState() {
     super.initState();
-    _doctorsFuture = _fetchDoctors();
+    _doctorsFuture = _fetchDoctors(-1);
+    _fetchSpecialties();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchDoctors() async {
+  Future<void> _fetchSpecialties() async {
     try {
-      final response = await Supabase.instance.client
+      final response = await Supabase.instance.client.from('specialties').select('specialtyid, specialtyname');
+      final specs = List<Map<String, dynamic>>.from(response);
+      if (mounted) {
+        setState(() {
+          filters = [{'id': -1, 'name': 'Tất cả'}];
+          for (var spec in specs) {
+            filters.add({'id': spec['specialtyid'], 'name': spec['specialtyname']});
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Lỗi tải chuyên khoa: $e");
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchDoctors(int specialtyId) async {
+    try {
+      var query = Supabase.instance.client
           .from('doctors')
-          .select('*');
+          .select('*, specialties(specialtyname)');
+      if (specialtyId != -1) {
+        query = query.eq('specialtyid', specialtyId);
+      }
+      final response = await query;
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       // Trả về mảng rỗng nếu xảy ra lỗi kết nối API
@@ -134,6 +150,7 @@ class _BookingPageState extends State<BookingPage> {
                       onTap: () {
                         setState(() {
                           selectedFilter = index;
+                          _doctorsFuture = _fetchDoctors(filters[index]['id']);
                         });
                       },
                       child: Container(
@@ -160,7 +177,7 @@ class _BookingPageState extends State<BookingPage> {
                                 ),
                               ),
                             Text(
-                              filters[index],
+                              filters[index]['name'],
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,

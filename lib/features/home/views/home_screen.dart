@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'appointmentid, appointmentdate, starttime, endtime, doctors(fullname, title, avatarurl)',
           )
           .eq('userid', numericUserId)
-          .neq('status', 'Cancelled')
+          .eq('status', 'Confirmed')
           .gte('appointmentdate', today)
           .order('appointmentdate', ascending: true)
           .order('starttime', ascending: true)
@@ -353,7 +353,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     specialtyName,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Colors.white.withValues(alpha: 0.82),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.82,
+                                      ),
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
@@ -389,7 +391,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         Icon(
                                           Icons.calendar_today_outlined,
                                           size: 14,
-                                          color: Colors.white.withValues(alpha: 0.85),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.85,
+                                          ),
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
@@ -440,7 +444,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         Icon(
                                           Icons.access_time_outlined,
                                           size: 14,
-                                          color: Colors.white.withValues(alpha: 0.85),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.85,
+                                          ),
                                         ),
                                         const SizedBox(width: 6),
                                         Text(
@@ -561,6 +567,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       return _CategoryItem(
                         spec['specialtyname'] ?? "Chuyên khoa",
                         spec['description'] ?? "Bác sĩ chuyên khoa",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  SpecialtyDoctorsScreen(specialty: spec),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
@@ -666,8 +681,9 @@ class _HomeScreenState extends State<HomeScreen> {
 class _CategoryItem extends StatelessWidget {
   final String title;
   final String sub;
+  final VoidCallback onTap;
 
-  const _CategoryItem(this.title, this.sub);
+  const _CategoryItem(this.title, this.sub, {required this.onTap});
 
   @override
   Widget build(BuildContext context) {
