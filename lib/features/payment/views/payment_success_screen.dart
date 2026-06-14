@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../main.dart';
 
 class PaymentSuccessScreen extends StatelessWidget {
@@ -10,6 +10,7 @@ class PaymentSuccessScreen extends StatelessWidget {
   final String appointmentId;
   final String doctorAvatar;
   final String specialty;
+  final String? serviceName;
 
   const PaymentSuccessScreen({
     super.key,
@@ -21,6 +22,7 @@ class PaymentSuccessScreen extends StatelessWidget {
     required this.appointmentId,
     required this.doctorAvatar,
     required this.specialty,
+    this.serviceName,
   });
 
   @override
@@ -116,7 +118,7 @@ class PaymentSuccessScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'THỜI GIAN',
+                    'THỚI GIAN',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -125,6 +127,20 @@ class PaymentSuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   _infoRow(Icons.calendar_today, '$time | $date'),
+                  // Dịch vụ đã chọn (nếu có)
+                  if (serviceName != null) ...[
+                    const SizedBox(height: 16),
+                    const Text(
+                      'D\u1ecaCH V\u1ee4 \u0110\u00c3 CH\u1ecc N',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _infoRow(Icons.medical_services_outlined, serviceName!),
+                  ],
                   const SizedBox(height: 16),
                   const Text(
                     'MÃ GIAO DỊCH',
@@ -241,3 +257,4 @@ class PaymentSuccessScreen extends StatelessWidget {
     );
   }
 }
+

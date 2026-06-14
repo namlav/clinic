@@ -8,6 +8,8 @@ class PaymentScreen extends StatefulWidget {
   final String bookingDate;
   final String bookingTime;
   final int appointmentId;
+  final String? serviceName;
+  final double? servicePrice;
 
   const PaymentScreen({
     super.key,
@@ -15,6 +17,8 @@ class PaymentScreen extends StatefulWidget {
     required this.bookingDate,
     required this.bookingTime,
     required this.appointmentId,
+    this.serviceName,
+    this.servicePrice,
   });
 
   @override
@@ -135,6 +139,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
           'SH-${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
       final double consultationFee =
           double.tryParse(doctorData!['consultationfee'].toString()) ?? 500000;
+      final double servicePrice = widget.servicePrice ?? 0;
+      final double totalFee = consultationFee + servicePrice;
 
       // Parse starttime: "09:30 AM" -> "09:30:00"
       String startTime = _parseTimeToHHMMSS(widget.bookingTime);
@@ -150,10 +156,11 @@ class _PaymentScreenState extends State<PaymentScreen> {
       // Insert payment — appointmentid để RLS tự verify qua join appointments
       await supabase.from('payments').insert({
         'appointmentid': widget.appointmentId,
+        'userid': numericUserId,
         'transactioncode': randomInvoice,
         'baseamount': consultationFee,
         'discountamount': 0,
-        'totalamount': consultationFee,
+        'totalamount': totalFee,
         'paymentmethod': selectedMethod,
         'paymentdate': DateTime.now().toIso8601String(),
         'status': 'Success',
@@ -167,7 +174,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           MaterialPageRoute(
             builder: (context) => PaymentSuccessScreen(
               transactionCode: randomInvoice,
-              totalAmount: '${consultationFee.toStringAsFixed(0)}đ',
+              totalAmount: '${totalFee.toStringAsFixed(0)}đ',
               date: widget.bookingDate,
               time: widget.bookingTime,
               doctorName: doctorData!['fullname'] ?? 'Bác sĩ',
@@ -176,6 +183,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   doctorData!['avatarurl'] ?? 'https://via.placeholder.com/150',
               specialty:
                   doctorData?['specialties']?['specialtyname'] ?? 'Chuyên khoa',
+              serviceName: widget.serviceName,
             ),
           ),
         );
@@ -245,11 +253,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     final String doctorName = doctorData?['fullname'] ?? 'Chưa rõ bác sĩ';
     final String specialtyName =
         doctorData?['specialties']?['specialtyname'] ?? 'Nội tổng quát';
-    final double fee =
+    final double consultationFee =
         double.tryParse(
           doctorData?['consultationfee'].toString() ?? '500000',
         ) ??
         500000;
+    final double servicePrice = widget.servicePrice ?? 0;
+    final double totalFee = consultationFee + servicePrice;
 
     return WillPopScope(
       onWillPop: () async {
@@ -375,18 +385,62 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
+                    // Phí khám
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'PHÍ DỊCH VỤ',
+                          'PHÍ KHÁM',
                           style: TextStyle(color: Colors.white70, fontSize: 12),
                         ),
                         Text(
-                          '${fee.toStringAsFixed(0)}đ',
+                          '${consultationFee.toStringAsFixed(0)}đ',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Phí dịch vụ (nếu có)
+                    if (widget.serviceName != null) ...[  
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.serviceName!,
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Text(
+                            '+${servicePrice.toStringAsFixed(0)}đ',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Divider(color: Colors.white24, height: 20),
+                    ],
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'TỔNG CỘNG',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                        Text(
+                          '${totalFee.toStringAsFixed(0)}đ',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -425,7 +479,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    '${fee.toStringAsFixed(0)}đ',
+                    '${totalFee.toStringAsFixed(0)}đ',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

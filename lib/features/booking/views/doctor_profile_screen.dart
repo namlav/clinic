@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../payment/views/payment_screen.dart';
+import 'service_selection_screen.dart';
 
 class DoctorProfilePage extends StatefulWidget {
   final Map<String, dynamic> doctorData;
@@ -22,10 +23,63 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
   bool _isConfirming = false; // Biến trạng thái để khóa nút khi đang xử lý
   bool _isActive = true; // Mặc định là cho phép
 
+  List<String> _bookedSlots = [];
+
   @override
   void initState() {
     super.initState();
     _checkUserStatus();
+    _fetchBookedSlots();
+  }
+
+  Future<void> _fetchBookedSlots() async {
+    try {
+      final doctorId = widget.doctorData['doctorid'];
+      if (doctorId == null) return;
+      
+      final dateStr = "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+      
+      final response = await Supabase.instance.client
+          .from('appointments')
+          .select('starttime')
+          .eq('doctorid', doctorId)
+          .eq('appointmentdate', dateStr)
+          .neq('status', 'Cancelled');
+          
+      final List<String> slots = (response as List).map((e) {
+        final timeStr = e['starttime'].toString();
+        return timeStr.length >= 5 ? timeStr.substring(0, 5) : timeStr;
+      }).toList();
+      
+      if (mounted) {
+        setState(() {
+          _bookedSlots = slots;
+        });
+      }
+    } catch (e) {
+      debugPrint("Lỗi fetch booked slots: $e");
+    }
+  }
+
+  String _to24HourFormat(String timeStr) {
+    final parts = timeStr.split(':');
+    if (parts.length < 2) return timeStr;
+    int hour = int.parse(parts[0]);
+    int minute = int.parse(parts[1]);
+    if (hour < 8) hour += 12; // 01:45 -> 13:45
+    return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}";
+  }
+
+  String _addOneHour(String time24) {
+    final parts = time24.split(':');
+    if (parts.length >= 2) {
+      int hour = int.parse(parts[0]);
+      int minute = int.parse(parts[1]);
+      hour += 1;
+      if (hour >= 24) hour = hour % 24;
+      return "${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}:00";
+    }
+    return "$time24:00";
   }
 
   Future<void> _checkUserStatus() async {
@@ -540,6 +594,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                               selectedDate = currentDay;
                               selectedTimeIndex = -1; // Reset giờ khi đổi ngày
                             });
+                            _fetchBookedSlots();
                           },
                     child: Container(
                       decoration: BoxDecoration(
@@ -600,17 +655,22 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
           ),
           itemBuilder: (context, index) {
             bool disabled = timeSlots[index]['disabled'];
+            final timeStr = timeSlots[index]['time'];
+            final time24 = _to24HourFormat(timeStr);
+
+            // Nếu giờ này nằm trong danh sách đã đặt thì disable
+            if (_bookedSlots.contains(timeStr) || _bookedSlots.contains(time24)) {
+              disabled = true;
+            }
 
             // Vô hiệu hóa các khung giờ trong ngày hôm nay đã trôi qua
             DateTime now = DateTime.now();
             if (selectedDate.year == now.year &&
                 selectedDate.month == now.month &&
                 selectedDate.day == now.day) {
-              final timeStr = timeSlots[index]['time'];
-              final parts = timeStr.split(':');
+              final parts = time24.split(':');
               int hour = int.parse(parts[0]);
               int minute = int.parse(parts[1]);
-              if (hour < 8) hour += 12;
 
               DateTime slotTime = DateTime(
                 selectedDate.year,
@@ -720,8 +780,8 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
                               userId, // 👉 Dòng quan trọng nhất để vượt qua RLS
                           'doctorid': doctorId,
                           'appointmentdate': appointmentDate,
-                          'starttime': "$selectedTime:00",
-                          'endtime': "$selectedTime:00",
+                          'starttime': "${_to24HourFormat(selectedTime)}:00",
+                          'endtime': _addOneHour(_to24HourFormat(selectedTime)),
                           'status': 'Pending',
                           'createdat': DateTime.now().toIso8601String(),
                         })
@@ -730,20 +790,28 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
 
                     final int newAppointmentId =
                         newAppointment['appointmentid'];
+                    final int? specialtyId =
+                        widget.doctorData['specialtyid'] as int?;
+                    final double consultationFee = double.tryParse(
+                            widget.doctorData['consultationfee']?.toString() ??
+                                '0') ??
+                        0;
 
                     if (mounted) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PaymentScreen(
+                          builder: (context) => ServiceSelectionScreen(
                             appointmentId: newAppointmentId,
                             doctorId: doctorId,
+                            specialtyId: specialtyId,
                             bookingDate: appointmentDate,
                             bookingTime: selectedTime,
+                            consultationFee: consultationFee,
                           ),
                         ),
                       ).then((_) {
-                        // Mở khóa nút lại nếu người dùng bấm "Back" từ trang thanh toán
+                        // Mở khóa nút lại nếu người dùng bấm "Back"
                         if (mounted) {
                           setState(() => _isConfirming = false);
                         }

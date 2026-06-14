@@ -561,6 +561,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       return _CategoryItem(
                         spec['specialtyname'] ?? "Chuyên khoa",
                         spec['description'] ?? "Bác sĩ chuyên khoa",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SpecialtyDoctorsScreen(specialty: spec),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
@@ -666,49 +674,53 @@ class _HomeScreenState extends State<HomeScreen> {
 class _CategoryItem extends StatelessWidget {
   final String title;
   final String sub;
+  final VoidCallback onTap;
 
-  const _CategoryItem(this.title, this.sub);
+  const _CategoryItem(this.title, this.sub, {required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF2FF),
-              borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
-            child: const Icon(Icons.favorite, color: Color(0xFF2F6CD3)),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            sub,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF8A94A6)),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-        ],
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEAF2FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.favorite, color: Color(0xFF2F6CD3)),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              sub,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF8A94A6)),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+          ],
+        ),
       ),
     );
   }
