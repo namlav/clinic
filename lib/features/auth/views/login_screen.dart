@@ -1,3 +1,5 @@
+import 'package:clinic/features/doctor_portal/doctor_screen.dart';
+import 'package:clinic/main.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'register_screen.dart';
@@ -35,6 +37,35 @@ class _LoginScreenState extends State<LoginScreen> {
     });
   }
 
+  Future<void> _handleRoleBasedNavigation(String authId) async {
+    try {
+      final data = await supabase
+          .from('users')
+          .select('role')
+          .eq('authid', authId)
+          .single();
+
+      final String role = data['role'] ?? 'patient';
+      if (!mounted) return;
+
+      if (role == 'doctor') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DoctorHomeScreen()),//doctor_screen
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainApp()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Lỗi phân quyền: $e")));
+    }
+  }
+
   void _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -46,10 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (response.user != null) {
           if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
-          );
+          await _handleRoleBasedNavigation(response.user!.id);
         }
       } on AuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(

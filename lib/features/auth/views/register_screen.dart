@@ -57,6 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 'email': email,
                 'phone': phone,
                 'password': _passwordController.text.trim(),
+                'role': 'patient',
               },
             ),
           ),
