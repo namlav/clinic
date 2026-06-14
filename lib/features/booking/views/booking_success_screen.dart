@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
+import '../../../main.dart';
 
 class BookingSuccessScreen extends StatelessWidget {
-  const BookingSuccessScreen({super.key});
+  final String appointmentDate;
+  final String appointmentTime;
+  final String doctorName;
+  final String doctorAvatar;
+  final String specialty;
+  final String appointmentId;
+
+  const BookingSuccessScreen({
+    super.key,
+    required this.appointmentDate,
+    required this.appointmentTime,
+    required this.doctorName,
+    required this.doctorAvatar,
+    required this.specialty,
+    required this.appointmentId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,18 +64,16 @@ class BookingSuccessScreen extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 30,
-                        backgroundImage: NetworkImage(
-                          'https://via.placeholder.com/150',
-                        ),
+                        backgroundImage: NetworkImage(doctorAvatar),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
+                          children: [
+                            const Text(
                               'BÁC SĨ PHỤ TRÁCH',
                               style: TextStyle(
                                 color: Colors.blue,
@@ -67,10 +81,10 @@ class BookingSuccessScreen extends StatelessWidget {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'TS.BS. Đinh Vinh Quang',
-                              style: TextStyle(
+                              doctorName,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -81,7 +95,10 @@ class BookingSuccessScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  _infoRow(Icons.calendar_today, '09:30 AM | 24/10/2026'),
+                  _infoRow(
+                    Icons.calendar_today,
+                    '$appointmentTime | $appointmentDate',
+                  ),
                 ],
               ),
             ),
@@ -106,10 +123,13 @@ class BookingSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _infoRow(Icons.calendar_today, '09:30 AM | 24/10/2026'),
+                  _infoRow(
+                    Icons.calendar_today,
+                    '$appointmentTime | $appointmentDate',
+                  ),
                   const SizedBox(height: 16),
                   const Text(
-                    'MÃ GIAO DỊCH',
+                    'MÃ LỊCH HẸN',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -117,9 +137,12 @@ class BookingSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'SH-20231024-001',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  Text(
+                    'APT-$appointmentId',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -133,19 +156,23 @@ class BookingSuccessScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.grey[200]!),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    'Tổng thanh toán',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '500.000đ',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'CHUYÊN KHOA',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF003D81),
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    specialty,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
@@ -157,7 +184,13 @@ class BookingSuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainApp()),
+                    (route) => false,
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF003D81),
                   shape: RoundedRectangleBorder(
@@ -175,7 +208,13 @@ class BookingSuccessScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MainApp()),
+                    (route) => false,
+                  );
+                },
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),

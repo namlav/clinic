@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'cancel_success_screen.dart';
 
 class CancelAppointmentScreen extends StatefulWidget {
-  const CancelAppointmentScreen({super.key});
+  final int appointmentId;
+
+  const CancelAppointmentScreen({super.key, required this.appointmentId});
 
   @override
   State<CancelAppointmentScreen> createState() =>
@@ -11,9 +14,106 @@ class CancelAppointmentScreen extends StatefulWidget {
 
 class _CancelAppointmentScreenState extends State<CancelAppointmentScreen> {
   final Color primaryColor = const Color(0xFF003D81);
+  final supabase = Supabase.instance.client;
+  bool isLoading = true;
+  Map<String, dynamic>? appointmentData;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppointmentDetails();
+  }
+
+  Future<void> _loadAppointmentDetails() async {
+    setState(() => isLoading = true);
+    try {
+      print('Loading appointment details for ID: ${widget.appointmentId}');
+
+      final response = await supabase
+          .from('appointments')
+          .select('*, doctors(fullname, avatarurl, specialties(specialtyname))')
+          .eq('appointmentid', widget.appointmentId)
+          .single();
+
+      print('Appointment loaded: $response');
+
+      setState(() {
+        appointmentData = response;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading appointment: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi tải chi tiết: $e')));
+      }
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _handleCancelAppointment() async {
+    if (appointmentData == null) return;
+
+    setState(() => isLoading = true);
+    try {
+      print('Attempting to cancel appointment ID: ${widget.appointmentId}');
+
+      final result = await supabase
+          .from('appointments')
+          .update({'status': 'Cancelled'})
+          .eq('appointmentid', widget.appointmentId);
+
+      print('Cancel result: $result');
+      print('Appointment cancelled successfully');
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CancelSuccessScreen(
+              appointmentId: widget.appointmentId,
+              doctorName: appointmentData?['doctors']?['fullname'] ?? 'Bác sĩ',
+              date: appointmentData?['appointmentdate'] ?? '',
+              time:
+                  appointmentData?['starttime']?.toString().split('.').first ??
+                  '',
+              specialty:
+                  appointmentData?['doctors']?['specialties']?['specialtyname'] ??
+                  'Chuyên khoa',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error cancelling appointment: $e');
+      print('Error type: ${e.runtimeType}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi hủy lịch: $e'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading && appointmentData == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final doctor = appointmentData?['doctors'] as Map<String, dynamic>?;
+    final doctorName = doctor?['fullname'] ?? 'Bác sĩ';
+    final specialty = doctor?['specialties']?['specialtyname'] ?? 'Chuyên khoa';
+    final appointmentDate = appointmentData?['appointmentdate'] ?? '';
+    final appointmentTime =
+        appointmentData?['starttime']?.toString().split('.').first ?? '';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -58,30 +158,46 @@ class _CancelAppointmentScreenState extends State<CancelAppointmentScreen> {
               ),
               child: Column(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 40,
-                    backgroundImage: NetworkImage(
-                      'https://via.placeholder.com/150',
-                    ),
+                    backgroundColor: Colors.blue[100],
+                    backgroundImage: doctor?['avatarurl'] != null
+                        ? NetworkImage(doctor!['avatarurl']!)
+                        : null,
+                    child: doctor?['avatarurl'] == null
+                        ? Text(
+                            doctorName.isNotEmpty
+                                ? doctorName[0].toUpperCase()
+                                : 'B',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'CHUYÊN KHOA NỘI TỔNG QUÁT',
-                    style: TextStyle(
+                  Text(
+                    specialty.toUpperCase(),
+                    style: const TextStyle(
                       color: Colors.blue,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'TS.BS. Đinh Vinh Quang',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Text(
+                    doctorName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  _infoRow(Icons.calendar_today, 'Thứ Tư, 25 Tháng 10'),
+                  _infoRow(Icons.calendar_today, appointmentDate),
                   const SizedBox(height: 8),
-                  _infoRow(Icons.access_time, '09:30 - 10:00'),
+                  _infoRow(Icons.access_time, appointmentTime),
                 ],
               ),
             ),
@@ -90,8 +206,8 @@ class _CancelAppointmentScreenState extends State<CancelAppointmentScreen> {
               children: [
                 Icon(Icons.help_outline, color: primaryColor, size: 20),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: const Text(
+                const Expanded(
+                  child: Text(
                     'Bạn có chắc chắn muốn hủy lịch hẹn này không?',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                   ),
@@ -149,35 +265,41 @@ class _CancelAppointmentScreenState extends State<CancelAppointmentScreen> {
               width: double.infinity,
               height: 50,
               child: OutlinedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CancelSuccessScreen(),
-                    ),
-                  );
-                },
+                onPressed: isLoading ? null : _handleCancelAppointment,
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.red, width: 2),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel_outlined, color: Colors.red, size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'Xác nhận hủy',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                child: isLoading
+                    ? const SizedBox(
+                        height: 24,
+                        width: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                        ),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.cancel_outlined,
+                            color: Colors.red,
+                            size: 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Xác nhận hủy',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
             const SizedBox(height: 32),

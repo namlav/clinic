@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -11,22 +12,20 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
       title: 'SereneHealth',
-
       theme: ThemeData(
         fontFamily: 'Inter',
-
         scaffoldBackgroundColor: const Color(0xFFF5F7FA),
       ),
-
-      home: const DoctorReplacementPage(),
+      home: const DoctorReplacementPage(appointmentId: 1),
     );
   }
 }
 
 class DoctorReplacementPage extends StatefulWidget {
-  const DoctorReplacementPage({super.key});
+  final int appointmentId;
+
+  const DoctorReplacementPage({super.key, required this.appointmentId});
 
   @override
   State<DoctorReplacementPage> createState() => _DoctorReplacementPageState();
@@ -35,54 +34,127 @@ class DoctorReplacementPage extends StatefulWidget {
 class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
   int selectedNav = 2;
 
+  late Future<Map<String, dynamic>?> _replacementDataFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _replacementDataFuture = _loadReplacementDoctorAndAppointment();
+  }
+
+  Future<Map<String, dynamic>?> _loadReplacementDoctorAndAppointment() async {
+    try {
+      final client = Supabase.instance.client;
+
+      final appointmentResponse = await client
+          .from('appointments')
+          .select('doctorid, doctors(fullname, specialtyid)')
+          .eq('appointmentid', widget.appointmentId)
+          .maybeSingle();
+
+      if (appointmentResponse == null) return null;
+
+      final originalDoctor =
+          appointmentResponse['doctors'] as Map<String, dynamic>?;
+      if (originalDoctor == null) return null;
+
+      final int originalDoctorId = appointmentResponse['doctorid'];
+      final int specialtyId = originalDoctor['specialtyid'];
+      final String originalDoctorName = originalDoctor['fullname'] ?? "Bác sĩ";
+
+      final replacementResponse = await client
+          .from('doctors')
+          .select('*, specialties(specialtyname)')
+          .eq('specialtyid', specialtyId)
+          .neq('doctorid', originalDoctorId)
+          .order('rating', ascending: false)
+          .limit(1);
+
+      if (replacementResponse != null &&
+          (replacementResponse as List).isNotEmpty) {
+        final replacementDoctor =
+            replacementResponse.first as Map<String, dynamic>;
+
+        return {
+          'original_doctor_name': originalDoctorName,
+          'replacement_doctor': replacementDoctor,
+        };
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-
       body: SafeArea(
-        child: Column(
-          children: [
-            /// APPBAR
-            _buildAppBar(),
+        child: FutureBuilder<Map<String, dynamic>?>(
+          future: _replacementDataFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: Color(0xFF004B9A)),
+              );
+            }
 
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-
-                  children: [
-                    const SizedBox(height: 22),
-
-                    /// ALERT
-                    _buildAlertBanner(),
-
-                    const SizedBox(height: 28),
-
-                    /// CARD
-                    _buildDoctorCard(),
-
-                    const SizedBox(height: 34),
-
-                    /// ACCEPT
-                    _buildAcceptButton(),
-
-                    const SizedBox(height: 16),
-
-                    /// CANCEL
-                    _buildCancelButton(),
-
-                    const SizedBox(height: 28),
-                  ],
+            if (snapshot.hasError ||
+                !snapshot.hasData ||
+                snapshot.data == null) {
+              return const Center(
+                child: Text(
+                  "Không tìm thấy thông tin đề xuất bác sĩ thay thế phù hợp.",
+                  style: TextStyle(color: Color(0xFF6E7688), fontSize: 15),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ),
+              );
+            }
 
-            /// BOTTOM NAV
-            _buildBottomNav(),
-          ],
+            final data = snapshot.data!;
+            final String originalName = data['original_doctor_name'];
+            final Map<String, dynamic> replacementDoc =
+                data['replacement_doctor'];
+            final Map<String, dynamic>? specialtyInfo =
+                replacementDoc['specialties'];
+
+            return Column(
+              children: [
+                /// APPBAR
+                _buildAppBar(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 22),
+
+                        _buildAlertBanner(originalName),
+                        const SizedBox(height: 28),
+
+                        /// CARD
+                        _buildDoctorCard(replacementDoc, specialtyInfo),
+                        const SizedBox(height: 34),
+
+                        /// ACCEPT
+                        _buildAcceptButton(replacementDoc['doctorid']),
+                        const SizedBox(height: 16),
+
+                        /// CANCEL
+                        _buildCancelButton(),
+                        const SizedBox(height: 28),
+                      ],
+                    ),
+                  ),
+                ),
+
+                /// BOTTOM NAV
+                _buildBottomNav(),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -91,29 +163,25 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
   Widget _buildAppBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-
       child: Stack(
         alignment: Alignment.center,
-
         children: [
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
-
-            child: Icon(
-              Icons.arrow_back_ios_new,
-              size: 22,
-              color: Color(0xFF004B9A),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: const Icon(
+                Icons.arrow_back_ios_new,
+                size: 22,
+                color: Color(0xFF004B9A),
+              ),
             ),
           ),
-
           const Text(
             "Thông báo",
-
             style: TextStyle(
               fontSize: 22,
-
               fontWeight: FontWeight.w700,
-
               color: Color(0xFF004B9A),
             ),
           ),
@@ -122,50 +190,37 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
     );
   }
 
-  Widget _buildAlertBanner() {
+  Widget _buildAlertBanner(String originalDoctorName) {
     return Container(
       width: double.infinity,
-
       padding: const EdgeInsets.all(18),
-
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 243, 177, 147),
-
         borderRadius: BorderRadius.circular(24),
       ),
-
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 2),
-
             child: Icon(Icons.info_outline, size: 22, color: Color(0xFF9A4F1D)),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 15,
                   height: 1.65,
-
                   color: Color(0xFF4F3729),
                 ),
-
                 children: [
-                  TextSpan(text: "Bác sĩ "),
-
+                  const TextSpan(text: "Bác sĩ "),
                   TextSpan(
-                    text: "Đinh Vinh Quang",
-
-                    style: TextStyle(fontWeight: FontWeight.w700),
+                    text: originalDoctorName,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
-
-                  TextSpan(
+                  const TextSpan(
                     text:
                         " hiện bận đột xuất. Để không gián đoạn việc thăm khám, chúng tôi đề xuất bác sĩ thay thế có trình độ tương đương.",
                   ),
@@ -178,78 +233,59 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
     );
   }
 
-  Widget _buildDoctorCard() {
+  Widget _buildDoctorCard(
+    Map<String, dynamic> doctor,
+    Map<String, dynamic>? specialty,
+  ) {
+    final String avatarUrl = doctor['avatarurl'] ?? "assets/images/ava1.jpg";
+    final String fullname = doctor['fullname'] ?? "Bác sĩ thay thế";
+    final String specialtyName = specialty != null
+        ? specialty['specialtyname']
+        : (doctor['title'] ?? "Khoa Nội Tổng Quát");
+    final String experienceYears = "${doctor['experienceyears'] ?? 10} năm";
+    final String rating = (doctor['rating'] ?? 5.0).toString();
+    final String education = doctor['education'] ?? "Thạc sĩ Y khoa";
+    final String bio =
+        doctor['bio'] ??
+        '"Tôi cam kết mang lại sự chăm sóc tận tâm và thấu đáo nhất cho mọi bệnh nhân, đảm bảo quá trình điều trị của bạn không bị gián đoạn."';
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: BorderRadius.circular(34),
-
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
-
             offset: const Offset(0, 4),
           ),
         ],
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-
         children: [
           /// IMAGE
           Stack(
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(34),
-
-                  topRight: Radius.circular(34),
-                ),
-
-                child: Container(
-                  width: double.infinity,
-                  height: 360,
-
-                  color: const Color(0xFFF1F3F6),
-
-                  child: Image.asset(
-                    "assets/images/ava1.jpg",
-
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-
+              CustomClipRRect(avatarUrl: avatarUrl),
               Positioned(
                 top: 18,
                 left: 18,
-
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 18,
                     vertical: 9,
                   ),
-
                   decoration: BoxDecoration(
                     color: const Color(0xFF004B9A),
-
                     borderRadius: BorderRadius.circular(24),
                   ),
-
                   child: const Text(
                     "ĐỀ XUẤT TỐT NHẤT",
-
                     style: TextStyle(
                       fontSize: 12,
-
                       fontWeight: FontWeight.w700,
-
                       letterSpacing: 0.7,
-
                       color: Colors.white,
                     ),
                   ),
@@ -261,25 +297,19 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
           /// CONTENT
           Padding(
             padding: const EdgeInsets.all(24),
-
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 /// NAME
-                const Text(
-                  "BS. Lê Thanh Hằng",
-
-                  style: TextStyle(
+                Text(
+                  fullname,
+                  style: const TextStyle(
                     fontSize: 24,
                     height: 1.3,
-
                     fontWeight: FontWeight.w800,
-
                     color: Color(0xFF1A1F36),
                   ),
                 ),
-
                 const SizedBox(height: 10),
 
                 /// SPECIALTY
@@ -288,74 +318,51 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
                     const Icon(
                       Icons.local_hospital_outlined,
                       size: 17,
-
                       color: Color(0xFF0057C2),
                     ),
-
                     const SizedBox(width: 6),
-
-                    const Text(
-                      "Khoa Nội Tổng Quát",
-
-                      style: TextStyle(
+                    Text(
+                      specialtyName,
+                      style: const TextStyle(
                         fontSize: 15,
-
                         fontWeight: FontWeight.w600,
-
                         color: Color(0xFF0057C2),
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 22),
-
                 Divider(color: Colors.grey.shade200),
-
                 const SizedBox(height: 18),
 
                 /// STATS
                 Row(
                   children: [
-                    _statItem("KINH NGHIỆM", "15 năm"),
-
+                    _statItem("KINH NGHIỆM", experienceYears),
                     const SizedBox(width: 40),
-
-                    _ratingItem("ĐÁNH GIÁ", "4.9"),
+                    _ratingItem("ĐÁNH GIÁ", rating),
                   ],
                 ),
-
                 const SizedBox(height: 22),
-
-                _statItem("HỌC VẤN", "Thạc sĩ Y khoa"),
-
+                _statItem("HỌC VẤN", education),
                 const SizedBox(height: 24),
-
                 Divider(color: Colors.grey.shade200),
-
                 const SizedBox(height: 22),
 
                 /// QUOTE
                 Container(
                   width: double.infinity,
-
                   padding: const EdgeInsets.all(20),
-
                   decoration: BoxDecoration(
                     color: const Color(0xFFF8F9FC),
-
                     borderRadius: BorderRadius.circular(22),
                   ),
-
-                  child: const Text(
-                    '"Tôi cam kết mang lại sự chăm sóc tận tâm và thấu đáo nhất cho mọi bệnh nhân, đảm bảo quá trình điều trị của bạn không bị gián đoạn."',
-
-                    style: TextStyle(
+                  child: Text(
+                    bio.startsWith('"') ? bio : '"$bio"',
+                    style: const TextStyle(
                       fontSize: 15,
                       height: 1.8,
-
                       fontStyle: FontStyle.italic,
-
                       color: Color(0xFF6E7688),
                     ),
                   ),
@@ -371,32 +378,22 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
   Widget _statItem(String title, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-
       children: [
         Text(
           title,
-
           style: const TextStyle(
             fontSize: 11,
-
             fontWeight: FontWeight.w700,
-
             letterSpacing: 1,
-
             color: Color(0xFFB0B8C5),
           ),
         ),
-
         const SizedBox(height: 6),
-
         Text(
           value,
-
           style: const TextStyle(
             fontSize: 16,
-
             fontWeight: FontWeight.w700,
-
             color: Color(0xFF1A1F36),
           ),
         ),
@@ -407,40 +404,28 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
   Widget _ratingItem(String title, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-
       children: [
         Text(
           title,
-
           style: const TextStyle(
             fontSize: 11,
-
             fontWeight: FontWeight.w700,
-
             letterSpacing: 1,
-
             color: Color(0xFFB0B8C5),
           ),
         ),
-
         const SizedBox(height: 6),
-
         Row(
           children: [
             Text(
               value,
-
               style: const TextStyle(
                 fontSize: 16,
-
                 fontWeight: FontWeight.w700,
-
                 color: Color(0xFF1A1F36),
               ),
             ),
-
             const SizedBox(width: 4),
-
             const Icon(Icons.star, size: 17, color: Color(0xFFFFB800)),
           ],
         ),
@@ -448,34 +433,47 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
     );
   }
 
-  Widget _buildAcceptButton() {
+  Widget _buildAcceptButton(int replacementDoctorId) {
     return SizedBox(
       width: double.infinity,
       height: 64,
-
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () async {
+          try {
+            await Supabase.instance.client
+                .from('appointments')
+                .update({'doctorid': replacementDoctorId})
+                .eq('appointmentid', widget.appointmentId);
 
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Đã xác nhận thay đổi bác sĩ thành công!"),
+                ),
+              );
+              Navigator.pop(context);
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Có lỗi xảy ra khi xác nhận: $e")),
+              );
+            }
+          }
+        },
         style: ElevatedButton.styleFrom(
           elevation: 8,
-
           shadowColor: const Color(0x33004B9A),
-
           backgroundColor: const Color(0xFF004B9A),
-
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
           ),
         ),
-
         child: const Text(
           "Đồng ý và tiếp tục",
-
           style: TextStyle(
             fontSize: 18,
-
             fontWeight: FontWeight.w700,
-
             color: Colors.white,
           ),
         ),
@@ -487,34 +485,46 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
     return SizedBox(
       width: double.infinity,
       height: 64,
-
       child: OutlinedButton(
-        onPressed: () {},
+        onPressed: () async {
+          try {
+            await Supabase.instance.client
+                .from('appointments')
+                .update({'status': 'Cancelled'})
+                .eq('appointmentid', widget.appointmentId);
 
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Đã hủy lịch hẹn và tiến hành hoàn tiền."),
+                ),
+              );
+              Navigator.pop(context);
+            }
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Không thể hủy lịch. Lỗi: $e")),
+              );
+            }
+          }
+        },
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Color(0xFFE6B7B7), width: 1.5),
-
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
           ),
         ),
-
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
-
           children: [
             Icon(Icons.cancel_outlined, size: 20, color: Color(0xFFD93434)),
-
             SizedBox(width: 8),
-
             Text(
               "Hủy lịch và hoàn tiền",
-
               style: TextStyle(
                 fontSize: 17,
-
                 fontWeight: FontWeight.w700,
-
                 color: Color(0xFFD93434),
               ),
             ),
@@ -527,85 +537,62 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
   Widget _buildBottomNav() {
     final items = [
       {'icon': Icons.home_outlined, 'label': 'HOME'},
-
       {'icon': Icons.search, 'label': 'SEARCH'},
-
       {'icon': Icons.calendar_today_outlined, 'label': 'SCHEDULE'},
-
       {'icon': Icons.person_outline, 'label': 'PROFILE'},
     ];
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-
       decoration: BoxDecoration(
         color: Colors.white,
-
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(28),
           topRight: Radius.circular(28),
         ),
-
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
-
             offset: const Offset(0, -4),
           ),
         ],
       ),
-
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
-
         children: List.generate(items.length, (index) {
           bool isSelected = selectedNav == index;
-
           return GestureDetector(
             onTap: () {
               setState(() {
                 selectedNav = index;
               });
             },
-
             child: isSelected
                 ? Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 22,
                       vertical: 10,
                     ),
-
                     decoration: BoxDecoration(
                       color: const Color(0xFF0057C2),
-
                       borderRadius: BorderRadius.circular(18),
                     ),
-
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-
                       children: [
                         Icon(
                           items[index]['icon'] as IconData,
-
                           size: 20,
                           color: Colors.white,
                         ),
-
                         const SizedBox(height: 4),
-
                         Text(
                           items[index]['label'] as String,
-
                           style: const TextStyle(
                             fontSize: 10,
-
                             fontWeight: FontWeight.w700,
-
                             letterSpacing: 0.5,
-
                             color: Colors.white,
                           ),
                         ),
@@ -614,28 +601,19 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
                   )
                 : Column(
                     mainAxisSize: MainAxisSize.min,
-
                     children: [
                       Icon(
                         items[index]['icon'] as IconData,
-
                         size: 23,
-
                         color: const Color(0xFFB0B8C5),
                       ),
-
                       const SizedBox(height: 4),
-
                       Text(
                         items[index]['label'] as String,
-
                         style: const TextStyle(
                           fontSize: 10,
-
                           fontWeight: FontWeight.w600,
-
                           letterSpacing: 0.5,
-
                           color: Color(0xFFB0B8C5),
                         ),
                       ),
@@ -643,6 +621,35 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
                   ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class CustomClipRRect extends StatelessWidget {
+  const CustomClipRRect({super.key, required this.avatarUrl});
+
+  final String avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(34),
+        topRight: Radius.circular(34),
+      ),
+      child: Container(
+        width: double.infinity,
+        height: 360,
+        color: const Color(0xFFF1F3F6),
+        child: avatarUrl.startsWith('http')
+            ? Image.network(
+                avatarUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    Image.asset("assets/images/ava1.jpg", fit: BoxFit.cover),
+              )
+            : Image.asset("assets/images/ava1.jpg", fit: BoxFit.cover),
       ),
     );
   }

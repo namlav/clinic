@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'features/auth/views/welcome_screen.dart';
 import 'features/home/views/home_screen.dart';
 import 'features/home/views/search_screen.dart';
@@ -46,14 +46,21 @@ class MyApp extends StatelessWidget {
 }
 
 class MainApp extends StatefulWidget {
-  const MainApp({super.key});
+  final int initialIndex;
+  const MainApp({super.key, this.initialIndex = 0});
 
   @override
   State<MainApp> createState() => _MainAppState();
 }
 
 class _MainAppState extends State<MainApp> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,10 +69,8 @@ class _MainAppState extends State<MainApp> {
         duration: const Duration(milliseconds: 150),
         switchInCurve: Curves.easeIn,
         switchOutCurve: Curves.easeOut,
-        transitionBuilder: (child, animation) => FadeTransition(
-          opacity: animation,
-          child: child,
-        ),
+        transitionBuilder: (child, animation) =>
+            FadeTransition(opacity: animation, child: child),
         child: KeyedSubtree(
           key: ValueKey(_currentIndex),
           child: _buildPage(_currentIndex),
@@ -85,9 +90,7 @@ class _MainAppState extends State<MainApp> {
   Widget _buildPage(int index) {
     switch (index) {
       case 0:
-        return HomeScreen(
-          onSearchTap: () => setState(() => _currentIndex = 1),
-        );
+        return HomeScreen(onSearchTap: () => setState(() => _currentIndex = 1));
       case 1:
         return const SearchScreen();
       case 2:
