@@ -38,6 +38,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
         type: supabaseOtpType,
         token: _otpController.text.trim(),
         email: widget.target,
+      );
 
       if (res.user != null) {
         if (widget.type == OtpTypeVerify.recovery) {
