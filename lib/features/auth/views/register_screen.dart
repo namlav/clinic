@@ -38,11 +38,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _isLoading = true);
 
       String phone = _phoneController.text.trim();
-      if (phone.startsWith('0')) phone = '84${phone.substring(1)}';
+      if (phone.startsWith('0')) phone = '0${phone.substring(1)}';
       String email = _emailController.text.trim().toLowerCase();
 
       try {
-        await supabase.auth.signInWithOtp(email: email);
+        // Kiểm tra xem email đã tồn tại trong public.users chưa
+        final existingUser = await supabase
+            .from('users')
+            .select('email')
+            .eq('email', email)
+            .maybeSingle();
+
+        if (existingUser != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Email này đã được đăng ký, vui lòng đăng nhập!"),
+            ),
+          );
+          if (mounted) setState(() => _isLoading = false);
+          return;
+        }
+
+        // Sử dụng signUp chuẩn của Supabase
+        await supabase.auth.signUp(
+          email: email,
+          password: _passwordController.text.trim(),
+        );
 
         if (!mounted) return;
 

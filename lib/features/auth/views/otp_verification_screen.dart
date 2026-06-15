@@ -32,7 +32,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     try {
       OtpType supabaseOtpType = widget.type == OtpTypeVerify.recovery
           ? OtpType.recovery
-          : OtpType.email;
+          : OtpType.signup;
 
       final res = await supabase.auth.verifyOTP(
         type: supabaseOtpType,
@@ -50,12 +50,9 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             ),
           );
         } else {
-          await supabase.auth.updateUser(
-            UserAttributes(password: widget.userData!['password']),
-          );
+          // Mật khẩu đã được set thành công lúc gọi signUp() rồi, không cần updateUser() nữa
 
-          await supabase.from('users').upsert({
-            'userid': res.user!.id,
+          await supabase.from('users').insert({
             'authid': res.user!.id,
             'fullname': widget.userData!['fullname'],
             'email': widget.userData!['email'],
@@ -64,7 +61,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             'isactive': true,
             'joineddate': DateTime.now().toIso8601String(),
             'membershiptier': 'Standard',
-          }, onConflict: 'userid');
+          });
 
           await supabase.auth.signOut();
 
@@ -81,14 +78,14 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
     } on AuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Lỗi: ${e.message}"),
+          content: Text("Lỗi xác thực: ${e.message}"),
           backgroundColor: Colors.red,
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Mã xác thực không đúng hoặc đã hết hạn"),
+        SnackBar(
+          content: Text("Lỗi hệ thống: $e"),
           backgroundColor: Colors.red,
         ),
       );
