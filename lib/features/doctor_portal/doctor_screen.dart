@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'medical_exam_form.dart';
+import 'appointment_history_screen.dart';
+import '../../main.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
@@ -26,13 +28,29 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
   // Lịch tuần: map 'yyyy-MM-dd' -> danh sách ca trong ngày đó
   Map<String, List<Map<String, dynamic>>> _weekAppointments = {};
+  // Lịch làm việc đã đăng ký trong tuần: map 'yyyy-MM-dd' -> danh sách khung giờ
+  Map<String, List<Map<String, dynamic>>> _weekAvailabilities = {};
   DateTime _currentWeekStart = _mondayOf(DateTime.now());
   bool _isWeekLoading = false;
+
+  // Chế độ xem lịch: 0 = Ngày, 1 = Tuần, 2 = Tháng
+  int _calMode = 0;
+  // Ngày đang chọn (dùng cho chế độ Ngày và highlight)
+  DateTime _selectedDay = DateTime(
+      DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  // Tháng đang xem (mốc ngày 1)
+  DateTime _currentMonth =
+      DateTime(DateTime.now().year, DateTime.now().month, 1);
+  // Đánh dấu ngày có lịch trong tháng: 'yyyy-MM-dd' -> có ca khám? / có khung giờ?
+  Map<String, Map<String, dynamic>> _monthMarks = {};
+  bool _isMonthLoading = false;
 
   // Các biến thống kê
   int _totalToday = 0;
   int _pendingCount = 0;
+  int _confirmedCount = 0;
   int _completedCount = 0;
+  int _cancelledCount = 0;
 
   // Lịch làm việc (doctor_availabilities)
   List<Map<String, dynamic>> _availabilities = [];
@@ -42,6 +60,20 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   static DateTime _mondayOf(DateTime date) {
     final d = DateTime(date.year, date.month, date.day);
     return d.subtract(Duration(days: d.weekday - 1));
+  }
+
+  // Chuẩn hóa khóa ngày 'yyyy-MM-dd' từ DateTime (không qua toIso8601String -> tránh lệch múi giờ)
+  static String _dateKey(DateTime d) =>
+      "${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+
+  // Chuẩn hóa khóa ngày từ chuỗi DB (date / timestamp / có 'T' hoặc khoảng trắng)
+  static String _dateKeyFromRaw(dynamic raw) {
+    final s = (raw ?? '').toString().trim();
+    if (s.isEmpty) return '';
+    final parsed = DateTime.tryParse(s.replaceFirst(' ', 'T'));
+    if (parsed != null) return _dateKey(parsed);
+    // fallback: lấy 10 ký tự đầu nếu parse thất bại
+    return s.length >= 10 ? s.substring(0, 10) : s;
   }
 
   @override
@@ -92,8 +124,12 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         _totalToday = list.length;
         _pendingCount =
             list.where((a) => a['status'] == 'Pending').length;
+        _confirmedCount =
+            list.where((a) => a['status'] == 'Confirmed').length;
         _completedCount =
             list.where((a) => a['status'] == 'Completed').length;
+        _cancelledCount =
+            list.where((a) => a['status'] == 'Cancelled').length;
         _isLoading = false;
       });
 
@@ -113,33 +149,148 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     setState(() => _isWeekLoading = true);
     try {
       final weekEnd = _currentWeekStart.add(const Duration(days: 6));
-      final startStr =
-          _currentWeekStart.toIso8601String().split('T')[0];
-      final endStr = weekEnd.toIso8601String().split('T')[0];
+      final startStr = _dateKey(_currentWeekStart);
+      final endStr = _dateKey(weekEnd);
+      // Chặn trên nới thêm 1 ngày để không loại nhầm bản ghi ngày cuối
+      // khi cột là kiểu timestamp/timestamptz (giờ > 00:00 sẽ vượt mốc 'endStr').
+      final endExclusive = _dateKey(weekEnd.add(const Duration(days: 1)));
+      // Tập 7 khoá ngày hợp lệ của tuần đang xem để lọc lại phía client.
+      final weekKeys = List.generate(
+          7, (i) => _dateKey(_currentWeekStart.add(Duration(days: i)))).toSet();
 
       final data = await supabase
           .from('appointments')
           .select('*, users:userid(fullname, phone)')
           .eq('doctorid', _doctorId!)
           .gte('appointmentdate', startStr)
-          .lte('appointmentdate', endStr)
+          .lt('appointmentdate', endExclusive)
           .order('starttime', ascending: true);
 
       final list = List<Map<String, dynamic>>.from(data);
       final Map<String, List<Map<String, dynamic>>> grouped = {};
       for (final app in list) {
-        final date = (app['appointmentdate'] ?? '').toString();
+        final date = _dateKeyFromRaw(app['appointmentdate']);
+        if (!weekKeys.contains(date)) continue;
         grouped.putIfAbsent(date, () => []).add(app);
+      }
+
+      // Lấy thêm lịch làm việc đã đăng ký trong tuần
+      final avData = await supabase
+          .from('doctor_availabilities')
+          .select('*')
+          .eq('doctorid', _doctorId!)
+          .gte('workdate', startStr)
+          .lt('workdate', endExclusive)
+          .order('workdate', ascending: true)
+          .order('starttime', ascending: true);
+
+      final avList = List<Map<String, dynamic>>.from(avData);
+      final Map<String, List<Map<String, dynamic>>> avGrouped = {};
+      for (final av in avList) {
+        final date = _dateKeyFromRaw(av['workdate']);
+        if (!weekKeys.contains(date)) continue;
+        avGrouped.putIfAbsent(date, () => []).add(av);
       }
 
       setState(() {
         _weekAppointments = grouped;
+        _weekAvailabilities = avGrouped;
         _isWeekLoading = false;
       });
+      debugPrint("Lịch tuần: $startStr->$endStr | "
+          "avList=${avList.length} | avKeys=${avGrouped.keys.toList()} | "
+          "weekKeys=${List.generate(7, (i) => _dateKey(_currentWeekStart.add(Duration(days: i))))}");
     } catch (e) {
       debugPrint("Lỗi tải lịch tuần: $e");
       setState(() => _isWeekLoading = false);
     }
+  }
+
+  // Tải dữ liệu cả tháng để đánh dấu chấm trên lưới lịch tháng
+  Future<void> _loadMonthData() async {
+    if (_doctorId == null) return;
+    setState(() => _isMonthLoading = true);
+    try {
+      final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
+      // Ngày đầu tháng kế tiếp (chặn trên dạng exclusive)
+      final nextMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+      final startStr = _dateKey(firstDay);
+      final endExclusive = _dateKey(nextMonth);
+
+      final apps = await supabase
+          .from('appointments')
+          .select('appointmentdate')
+          .eq('doctorid', _doctorId!)
+          .gte('appointmentdate', startStr)
+          .lt('appointmentdate', endExclusive);
+
+      final avs = await supabase
+          .from('doctor_availabilities')
+          .select('workdate')
+          .eq('doctorid', _doctorId!)
+          .gte('workdate', startStr)
+          .lt('workdate', endExclusive);
+
+      final Map<String, Map<String, dynamic>> marks = {};
+      for (final a in List<Map<String, dynamic>>.from(apps)) {
+        final k = _dateKeyFromRaw(a['appointmentdate']);
+        if (k.isEmpty) continue;
+        (marks[k] ??= {'app': false, 'av': false})['app'] = true;
+      }
+      for (final a in List<Map<String, dynamic>>.from(avs)) {
+        final k = _dateKeyFromRaw(a['workdate']);
+        if (k.isEmpty) continue;
+        (marks[k] ??= {'app': false, 'av': false})['av'] = true;
+      }
+
+      setState(() {
+        _monthMarks = marks;
+        _isMonthLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Lỗi tải lịch tháng: $e");
+      setState(() => _isMonthLoading = false);
+    }
+  }
+
+  // Chuyển ngày (chế độ Ngày)
+  void _changeSelectedDay(int deltaDays) {
+    setState(() {
+      _selectedDay = _selectedDay.add(Duration(days: deltaDays));
+      // Đồng bộ tuần chứa ngày đang chọn để dữ liệu sẵn sàng
+      _currentWeekStart = _mondayOf(_selectedDay);
+    });
+    _loadWeekData();
+  }
+
+  // Chuyển tháng (chế độ Tháng)
+  void _changeMonth(int deltaMonths) {
+    setState(() {
+      _currentMonth =
+          DateTime(_currentMonth.year, _currentMonth.month + deltaMonths, 1);
+    });
+    _loadMonthData();
+  }
+
+  // Đổi chế độ xem và nạp dữ liệu tương ứng
+  void _setCalMode(int mode) {
+    setState(() => _calMode = mode);
+    if (mode == 2) {
+      _loadMonthData();
+    } else {
+      _loadWeekData();
+    }
+  }
+
+  // Mở màn Lịch sử khám (lọc theo khoảng ngày)
+  void _openHistory() {
+    if (_doctorId == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AppointmentHistoryScreen(doctorId: _doctorId!),
+      ),
+    );
   }
 
   void _changeWeek(int deltaWeeks) {
@@ -349,77 +500,650 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
-  // ===================== TAB 1: LỊCH TUẦN (thời khóa biểu T2-CN) =====================
-  Widget _buildWeeklyScheduleTab() {
-    const weekDayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    final today = DateTime.now();
-    final todayStr = DateTime(today.year, today.month, today.day);
+  // Màu theo loại lịch (đồng bộ legend)
+  static const Color kSchedule = Color(0xFF22C55E); // ca khám (xanh lá)
+  static const Color kOnline = kPrimary; // khung giờ làm (xanh dương)
 
+  // ISO week number của một ngày
+  int _isoWeekNumber(DateTime date) {
+    final d = DateTime(date.year, date.month, date.day);
+    final thursday = d.add(Duration(days: 4 - d.weekday));
+    final firstDayOfYear = DateTime(thursday.year, 1, 1);
+    final diffDays = thursday.difference(firstDayOfYear).inDays;
+    return 1 + (diffDays / 7).floor();
+  }
+
+  // ===================== TAB 1: LỊCH (Ngày / Tuần / Tháng) =====================
+  Widget _buildWeeklyScheduleTab() {
     return SafeArea(
       child: Column(
         children: [
-          // Header tuần + nút chuyển tuần
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [kPrimaryDark, kPrimary],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(28),
-                bottomRight: Radius.circular(28),
-              ),
-            ),
-            child: Column(
-              children: [
-                const Text(
-                  "Lịch làm việc trong tuần",
+          _buildCalendarTopBar(),
+          Expanded(
+            child: _calMode == 0
+                ? _buildDayView()
+                : _calMode == 1
+                    ? _buildWeekView()
+                    : _buildMonthView(),
+          ),
+          _buildLegend(),
+        ],
+      ),
+    );
+  }
+
+  // Thanh trên: tiêu đề + nút Lịch sử + segmented Ngày/Tuần/Tháng + nhãn điều hướng
+  Widget _buildCalendarTopBar() {
+    const names = ['Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7', 'CN'];
+    String navLabel;
+    if (_calMode == 0) {
+      navLabel = "${names[_selectedDay.weekday - 1]}, ${_dayMonthYear(_selectedDay)}";
+    } else if (_calMode == 1) {
+      navLabel = "Tuần ${_isoWeekNumber(_currentWeekStart)}";
+    } else {
+      navLabel = "tháng ${_currentMonth.month}, ${_currentMonth.year}";
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [kPrimaryDark, kPrimary],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  "Lịch làm việc",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _weekArrow(Icons.chevron_left, () => _changeWeek(-1)),
-                    Text(
-                      _weekRangeLabel(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+              ),
+              GestureDetector(
+                onTap: _openHistory,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.history, color: Colors.white, size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        "Lịch sử",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          // Segmented control Ngày / Tuần / Tháng
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                _segment("Ngày", 0),
+                _segment("Tuần", 1),
+                _segment("Tháng", 2),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          // Nhãn + mũi tên điều hướng
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _weekArrow(Icons.chevron_left, () {
+                if (_calMode == 0) {
+                  _changeSelectedDay(-1);
+                } else if (_calMode == 1) {
+                  _changeWeek(-1);
+                } else {
+                  _changeMonth(-1);
+                }
+              }),
+              Text(
+                navLabel,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              _weekArrow(Icons.chevron_right, () {
+                if (_calMode == 0) {
+                  _changeSelectedDay(1);
+                } else if (_calMode == 1) {
+                  _changeWeek(1);
+                } else {
+                  _changeMonth(1);
+                }
+              }),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _segment(String label, int mode) {
+    final selected = _calMode == mode;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _setCalMode(mode),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? kPrimary : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.white : Colors.grey.shade500,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _dayMonthYear(DateTime d) =>
+      "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
+
+  // ---------- Chế độ NGÀY ----------
+  Widget _buildDayView() {
+    const dayNames = ['Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7', 'CN'];
+    final weekStart = _mondayOf(_selectedDay);
+    final today = DateTime.now();
+    final todayKey = _dateKey(DateTime(today.year, today.month, today.day));
+    final selKey = _dateKey(_selectedDay);
+
+    final apps = _weekAppointments[selKey] ?? [];
+    final avs = _weekAvailabilities[selKey] ?? [];
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 86,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            itemCount: 7,
+            itemBuilder: (context, i) {
+              final day = weekStart.add(Duration(days: i));
+              final k = _dateKey(day);
+              return _dayCell(
+                dayNames[i],
+                day.day,
+                selected: k == selKey,
+                isToday: k == todayKey,
+                isWeekend: i >= 5,
+                onTap: () => setState(() => _selectedDay = day),
+              );
+            },
+          ),
+        ),
+        Expanded(
+          child: _isWeekLoading
+              ? const Center(child: CircularProgressIndicator())
+              : (apps.isEmpty && avs.isEmpty)
+                  ? _buildCalEmpty(
+                      "Không có dữ liệu vào ${dayNames[_selectedDay.weekday - 1].toLowerCase()}, ${_dayMonthYear(_selectedDay)}")
+                  : ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      children: _buildEntryCards(avs, apps),
                     ),
-                    _weekArrow(Icons.chevron_right, () => _changeWeek(1)),
-                  ],
+        ),
+      ],
+    );
+  }
+
+  Widget _dayCell(String name, int dayNum,
+      {required bool selected,
+      required bool isToday,
+      required bool isWeekend,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 60,
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: selected ? kPrimary : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected
+                ? kPrimary
+                : (isToday ? kPrimary : Colors.grey.shade200),
+            width: isToday && !selected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              name,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: selected
+                    ? Colors.white
+                    : (isWeekend ? Colors.red : Colors.grey.shade600),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              dayNum.toString(),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: selected
+                    ? Colors.white
+                    : (isWeekend ? Colors.red : const Color(0xFF1A1F36)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------- Chế độ TUẦN ----------
+  Widget _buildWeekView() {
+    const dayNames = ['Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7', 'CN'];
+    final today = DateTime.now();
+    final todayKey = _dateKey(DateTime(today.year, today.month, today.day));
+
+    if (_isWeekLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final List<Widget> sections = [];
+    for (int i = 0; i < 7; i++) {
+      final day = _currentWeekStart.add(Duration(days: i));
+      final k = _dateKey(day);
+      final apps = _weekAppointments[k] ?? [];
+      final avs = _weekAvailabilities[k] ?? [];
+      if (apps.isEmpty && avs.isEmpty) continue;
+      sections.add(_daySectionHeader(
+          "${dayNames[i]}, ${day.day.toString().padLeft(2, '0')}/${day.month.toString().padLeft(2, '0')}",
+          k == todayKey));
+      sections.addAll(_buildEntryCards(avs, apps));
+      sections.add(const SizedBox(height: 8));
+    }
+
+    if (sections.isEmpty) {
+      return _buildCalEmpty(
+          "Không có dữ liệu vào tuần ${_isoWeekNumber(_currentWeekStart)} năm ${_currentWeekStart.year}");
+    }
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      children: sections,
+    );
+  }
+
+  Widget _daySectionHeader(String label, bool isToday) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 4),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: isToday ? kPrimary : kPrimary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isToday ? Colors.white : kPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------- Chế độ THÁNG ----------
+  Widget _buildMonthView() {
+    const dayNames = ['Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7', 'CN'];
+    final firstDay = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    final daysInMonth =
+        DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+    final leadingBlanks = firstDay.weekday - 1; // T2 = 0 ô trống
+    final totalCells = leadingBlanks + daysInMonth;
+    final today = DateTime.now();
+    final todayKey = _dateKey(DateTime(today.year, today.month, today.day));
+    final selKey = _dateKey(_selectedDay);
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: dayNames
+                    .map((n) => Expanded(
+                          child: Center(
+                            child: Text(
+                              n,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: (n == 'Th 7' || n == 'CN')
+                                    ? Colors.red
+                                    : const Color(0xFF1A1F36),
+                              ),
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+              const SizedBox(height: 8),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate:
+                    const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: 0.8,
+                ),
+                itemCount: totalCells,
+                itemBuilder: (context, i) {
+                  if (i < leadingBlanks) return const SizedBox.shrink();
+                  final dayNum = i - leadingBlanks + 1;
+                  final day =
+                      DateTime(_currentMonth.year, _currentMonth.month, dayNum);
+                  final k = _dateKey(day);
+                  final mark = _monthMarks[k];
+                  final hasApp = mark?['app'] == true;
+                  final hasAv = mark?['av'] == true;
+                  final isSel = k == selKey;
+                  final isToday = k == todayKey;
+
+                  return GestureDetector(
+                    onTap: () => setState(() {
+                      _selectedDay = day;
+                      _currentWeekStart = _mondayOf(day);
+                      _calMode = 0;
+                      _loadWeekData();
+                    }),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isSel
+                                ? kPrimary
+                                : (isToday
+                                    ? kPrimary.withValues(alpha: 0.12)
+                                    : Colors.transparent),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            dayNum.toString(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              color: isSel
+                                  ? Colors.white
+                                  : const Color(0xFF1A1F36),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (hasApp) _dot(kSchedule),
+                            if (hasApp && hasAv) const SizedBox(width: 3),
+                            if (hasAv) _dot(kOnline),
+                            if (!hasApp && !hasAv) const SizedBox(height: 6),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (_isMonthLoading)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+      ],
+    );
+  }
+
+  Widget _dot(Color color) => Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      );
+
+  // ---------- Thẻ buổi/ca dùng chung (Ngày + Tuần) ----------
+  List<Widget> _buildEntryCards(
+      List<Map<String, dynamic>> avs, List<Map<String, dynamic>> apps) {
+    final List<Widget> cards = [];
+    for (final av in avs) {
+      cards.add(_entryCard(
+        barColor: kOnline,
+        title: "Khung giờ làm việc",
+        time: "${_startTime(av)} - ${_endTime(av)}",
+        subtitle: "Ca nhận khám đã đăng ký",
+      ));
+    }
+    for (final app in apps) {
+      final status = app['status']?.toString() ?? '';
+      cards.add(_entryCard(
+        barColor: kSchedule,
+        title: _patientName(app),
+        time: _startTime(app),
+        subtitle: "Trạng thái: ${_statusLabel(status)}",
+        onTap: () => _showQuickAction(app),
+      ));
+    }
+    return cards;
+  }
+
+  Widget _entryCard({
+    required Color barColor,
+    required String title,
+    required String time,
+    required String subtitle,
+    VoidCallback? onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 6,
+                  decoration: BoxDecoration(
+                    color: barColor,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(14),
+                      bottomLeft: Radius.circular(14),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: Color(0xFF1A1F36),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _entryRow(Icons.access_time, "Giờ", time),
+                        const SizedBox(height: 4),
+                        _entryRow(Icons.info_outline, "", subtitle),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: _isWeekLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: 7,
-                    itemBuilder: (context, i) {
-                      final day = _currentWeekStart.add(Duration(days: i));
-                      final dayKey = day.toIso8601String().split('T')[0];
-                      final apps = _weekAppointments[dayKey] ?? [];
-                      final isToday = DateTime(day.year, day.month, day.day) ==
-                          todayStr;
-                      return _buildDayRow(
-                          weekDayNames[i], day, apps, isToday);
-                    },
-                  ),
+        ),
+      ),
+    );
+  }
+
+  Widget _entryRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 15, color: Colors.grey.shade500),
+        const SizedBox(width: 6),
+        if (label.isNotEmpty)
+          Text("$label : ",
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1F36),
+            ),
           ),
+        ),
+      ],
+    );
+  }
+
+  // ---------- Empty state (folder buồn) ----------
+  Widget _buildCalEmpty(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.folder_open, size: 90, color: Colors.grey.shade300),
+            const SizedBox(height: 20),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade500,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------- Legend màu ----------
+  Widget _buildLegend() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _legendItem(kSchedule, "Ca khám"),
+          _legendItem(kOnline, "Khung giờ làm"),
         ],
       ),
+    );
+  }
+
+  Widget _legendItem(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+      ],
     );
   }
 
@@ -433,139 +1157,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: Colors.white, size: 22),
-      ),
-    );
-  }
-
-  String _weekRangeLabel() {
-    final end = _currentWeekStart.add(const Duration(days: 6));
-    String fmt(DateTime d) =>
-        "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}";
-    return "${fmt(_currentWeekStart)} - ${fmt(end)}/${end.year}";
-  }
-
-  // 1 dòng = 1 ngày trong tuần (kiểu thời khóa biểu)
-  Widget _buildDayRow(
-    String dayName,
-    DateTime day,
-    List<Map<String, dynamic>> apps,
-    bool isToday,
-  ) {
-    final hasApps = apps.isNotEmpty;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: isToday
-            ? Border.all(color: kPrimary, width: 1.5)
-            : Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Cột ngày
-          Container(
-            width: 64,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            decoration: BoxDecoration(
-              color: isToday
-                  ? kPrimary
-                  : (hasApps
-                      ? kPrimary.withValues(alpha: 0.08)
-                      : Colors.grey.shade50),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(17),
-                bottomLeft: Radius.circular(17),
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  dayName,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    color: isToday ? Colors.white : kPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  day.day.toString(),
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: isToday ? Colors.white : const Color(0xFF1A1F36),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Cột ca khám
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: hasApps
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: apps.map((app) {
-                        final color = _getStatusColor(
-                            app['status']?.toString() ?? '');
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 3),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: color.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  _startTime(app),
-                                  style: TextStyle(
-                                    color: color,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _patientName(app),
-                                  style: const TextStyle(fontSize: 13),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    )
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        "Không có ca khám",
-                        style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1143,11 +1734,20 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   Future<void> _handleLogout() async {
     try {
       await supabase.auth.signOut();
-      if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      }
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const AuthGate()),
+        (route) => false,
+      );
     } catch (e) {
       debugPrint("Lỗi đăng xuất: $e");
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Lỗi đăng xuất: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -1187,7 +1787,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       onTap: () {
         setState(() => _navIndex = index);
         if (index == 0) _loadDashboardData();
-        if (index == 1) _loadWeekData();
+        if (index == 1) {
+          if (_calMode == 2) {
+            _loadMonthData();
+          } else {
+            _loadWeekData();
+          }
+        }
         if (index == 2) _loadAvailabilities();
       },
       child: Container(
@@ -1328,35 +1934,33 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       child: Row(
         children: [
           _buildStatCell(
-            "Tổng ca",
-            _totalToday.toString(),
-            Icons.event_note,
-            kPrimary,
-          ),
-          _statDivider(),
-          _buildStatCell(
             "Chờ duyệt",
             _pendingCount.toString(),
             Icons.hourglass_top,
             const Color(0xFFF59E0B),
           ),
-          _statDivider(),
+          _buildStatCell(
+            "Đã nhận",
+            _confirmedCount.toString(),
+            Icons.event_available,
+            kPrimary,
+          ),
           _buildStatCell(
             "Hoàn tất",
             _completedCount.toString(),
             Icons.check_circle,
             const Color(0xFF22C55E),
           ),
+          _buildStatCell(
+            "Đã hủy",
+            _cancelledCount.toString(),
+            Icons.cancel,
+            Colors.red,
+          ),
         ],
       ),
     );
   }
-
-  Widget _statDivider() => Container(
-        width: 1,
-        height: 40,
-        color: Colors.grey.shade200,
-      );
 
   Widget _buildStatCell(
       String title, String value, IconData icon, Color color) {
@@ -1383,6 +1987,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           const SizedBox(height: 2),
           Text(
             title,
+            textAlign: TextAlign.center,
             style: const TextStyle(color: Colors.grey, fontSize: 11),
           ),
         ],

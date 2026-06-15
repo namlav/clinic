@@ -54,7 +54,7 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
       }
 
       // 1. Lưu vào bảng medicalrecords
-      await supabase.from('medicalrecords').insert({
+      final inserted = await supabase.from('medicalrecords').insert({
         'userid': widget.appointmentData['userid'], // ID Bệnh nhân
         'appointmentid': widget.appointmentData['appointmentid'], // ID Cuộc hẹn
         'doctorid': widget.appointmentData['doctorid'], // ID Bác sĩ
@@ -62,13 +62,22 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
         'prescription': prescription, // Đơn thuốc + lời dặn
         'recordtype': 'KhamLamSang', // Loại hồ sơ (mặc định)
         'recorddate': DateTime.now().toIso8601String(), // Ngày ghi hồ sơ
-      });
+      }).select('recordid').single();
 
-      // 2. Cập nhật trạng thái cuộc hẹn 
-      await supabase
-          .from('appointments')
-          .update({'status': 'Completed'})
-          .eq('appointmentid', widget.appointmentData['appointmentid']);
+      // 2. Cập nhật trạng thái cuộc hẹn
+      try {
+        await supabase
+            .from('appointments')
+            .update({'status': 'Completed'})
+            .eq('appointmentid', widget.appointmentData['appointmentid']);
+      } catch (e) {
+        // Rollback hồ sơ vừa tạo để tránh trạng thái không nhất quán
+        await supabase
+            .from('medicalrecords')
+            .delete()
+            .eq('recordid', inserted['recordid']);
+        rethrow;
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
