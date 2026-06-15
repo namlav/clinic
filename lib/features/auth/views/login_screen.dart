@@ -48,16 +48,16 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (role == 'doctor') {
-        Navigator.pushReplacement(
-          context,
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(
             builder: (context) => const DoctorHomeScreen(),
           ), //doctor_screen
+          (route) => false,
         );
       } else {
-        Navigator.pushReplacement(
-          context,
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const MainApp()),
+          (route) => false,
         );
       }
     } catch (e) {
@@ -78,10 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (response.user != null) {
           if (!mounted) return;
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainApp()),
-          );
+          await _handleRoleBasedNavigation(response.user!.id);
         }
       } on AuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
