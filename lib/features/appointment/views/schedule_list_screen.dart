@@ -521,7 +521,12 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
         children: [
           Row(
             children: [
-              CircleAvatar(radius: 32, backgroundImage: NetworkImage(imageUrl)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: imageUrl.startsWith('http')
+                    ? Image.network(imageUrl, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (c, e, s) => Image.asset("assets/images/ava1.jpg", width: 64, height: 64, fit: BoxFit.cover))
+                    : Image.asset("assets/images/ava1.jpg", width: 64, height: 64, fit: BoxFit.cover),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
