@@ -70,10 +70,9 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
           .order('rating', ascending: false)
           .limit(1);
 
-      if (replacementResponse != null &&
-          (replacementResponse as List).isNotEmpty) {
+      if ((replacementResponse as List).isNotEmpty) {
         final replacementDoctor =
-            replacementResponse.first as Map<String, dynamic>;
+            replacementResponse.first;
 
         return {
           'original_doctor_name': originalDoctorName,
@@ -255,7 +254,7 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
         borderRadius: BorderRadius.circular(34),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -552,7 +551,7 @@ class _DoctorReplacementPageState extends State<DoctorReplacementPage> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),

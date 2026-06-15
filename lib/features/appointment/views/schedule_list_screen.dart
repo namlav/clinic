@@ -56,7 +56,7 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
 
       final response = await supabase
           .from('appointments')
-          .select('*, doctors(fullname, avatarurl, specialties(specialtyname))')
+          .select('*, doctors(doctorid, fullname, avatarurl, title, specialties(specialtyname)), users(fullname), services(servicename, price)')
           .eq('userid', numericUserId);
 
       print('Appointments response: $response');
@@ -76,12 +76,12 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
 
         final status = appointment['status'] as String? ?? '';
 
-        // Bỏ qua các lịch đã hủy
-        if (status == 'Cancelled') continue;
+        // Bỏ qua các lịch đã hủy hoặc đang chờ thanh toán
+        if (status == 'Cancelled' || status == 'Pending') continue;
 
         if (status == 'Completed') {
           completed.add(appointment);
-        } else if (status == 'Confirmed' || status == 'Pending') {
+        } else if (status == 'Confirmed') {
           // Kiểm tra ngày hẹn đã qua ngày hôm nay chưa
           bool pastDay = false;
           try {
@@ -142,6 +142,35 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
       print(
         'Upcoming count: ${upcoming.length}, Completed count: ${completed.length}',
       );
+
+      // Sắp xếp lịch hẹn
+      upcoming.sort((a, b) {
+        try {
+          final dateA = DateTime.parse(
+            '${a['appointmentdate']} ${a['starttime']}',
+          );
+          final dateB = DateTime.parse(
+            '${b['appointmentdate']} ${b['starttime']}',
+          );
+          return dateA.compareTo(dateB); // Tăng dần (gần nhất ở trên)
+        } catch (_) {
+          return 0;
+        }
+      });
+
+      completed.sort((a, b) {
+        try {
+          final dateA = DateTime.parse(
+            '${a['appointmentdate']} ${a['starttime']}',
+          );
+          final dateB = DateTime.parse(
+            '${b['appointmentdate']} ${b['starttime']}',
+          );
+          return dateB.compareTo(dateA); // Giảm dần (mới hoàn thành ở trên)
+        } catch (_) {
+          return 0;
+        }
+      });
 
       setState(() {
         upcomingAppointments = upcoming;
@@ -225,16 +254,19 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
 
         return Column(
           children: [
-            _buildAppointmentCard(
-              appointmentId: appointment['appointmentid'],
-              doctorName: doctorName,
-              specialty: specialty,
-              date: rawDate,
-              time: rawStart,
-              location: appointment['roomname'] ?? 'Phòng Khám',
-              imageUrl: avatarUrl,
-              status: 'Sắp tới',
-              canComplete: canComplete,
+            GestureDetector(
+              onTap: () => _showAppointmentDetail(appointment),
+              child: _buildAppointmentCard(
+                appointmentId: appointment['appointmentid'],
+                doctorName: doctorName,
+                specialty: specialty,
+                date: rawDate,
+                time: rawStart,
+                location: appointment['roomname'] ?? 'Phòng Khám',
+                imageUrl: avatarUrl,
+                status: 'Sắp tới',
+                canComplete: canComplete,
+              ),
             ),
             if (index < upcomingAppointments.length - 1)
               const SizedBox(height: 12),
@@ -272,17 +304,20 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
 
         return Column(
           children: [
-            _buildAppointmentCard(
-              appointmentId: appointment['appointmentid'],
-              doctorName: doctorName,
-              specialty: specialty,
-              date: appointment['appointmentdate'] ?? '',
-              time:
-                  '${appointment['starttime']?.toString().split('.').first ?? ''}',
-              location: appointment['roomname'] ?? 'Phòng Khám',
-              imageUrl: avatarUrl,
-              status: 'Hoàn thành',
-              isCompleted: true,
+            GestureDetector(
+              onTap: () => _showAppointmentDetail(appointment),
+              child: _buildAppointmentCard(
+                appointmentId: appointment['appointmentid'],
+                doctorName: doctorName,
+                specialty: specialty,
+                date: appointment['appointmentdate'] ?? '',
+                time:
+                    appointment['starttime']?.toString().split('.').first ?? '',
+                location: appointment['roomname'] ?? 'Phòng Khám',
+                imageUrl: avatarUrl,
+                status: 'Hoàn thành',
+                isCompleted: true,
+              ),
             ),
             if (index < completedAppointments.length - 1)
               const SizedBox(height: 12),
@@ -367,6 +402,101 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
     }
   }
 
+  void _showAppointmentDetail(Map<String, dynamic> appointment) {
+    final doctor = appointment['doctors'] as Map<String, dynamic>?;
+    final service = appointment['services'] as Map<String, dynamic>?;
+    final patient = appointment['users'] as Map<String, dynamic>?;
+    final String specialtyName =
+        doctor?['specialties']?['specialtyname'] ?? 'Chuyên khoa';
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Center(
+                child: Text(
+                  'Chi tiết cuộc hẹn',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1A1F36),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _detailRow('Mã ca khám', '#${appointment['appointmentid']}'),
+              _detailRow('Chuyên khoa', specialtyName),
+              _detailRow('Mã bác sĩ', '#${doctor?['doctorid'] ?? '--'}'),
+              _detailRow('Tên bác sĩ', doctor?['fullname'] ?? '--'),
+              _detailRow('Tên bệnh nhân', patient?['fullname'] ?? '--'),
+              _detailRow(
+                'Thời gian',
+                '${appointment['appointmentdate'] ?? ''} '
+                '${appointment['starttime']?.toString().substring(0, 5) ?? ''}'
+                ' - '
+                '${appointment['endtime']?.toString().substring(0, 5) ?? ''}',
+              ),
+              _detailRow(
+                'Dịch vụ',
+                service?['servicename'] ?? 'Không có',
+                valueColor: service != null ? const Color(0xFF0057C2) : null,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _detailRow(String label, String value, {Color? valueColor}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Color(0xFF8A94A6),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? const Color(0xFF1A1F36),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAppointmentCard({
     required int appointmentId,
     required String doctorName,
@@ -391,7 +521,12 @@ class _ScheduleListScreenState extends State<ScheduleListScreen>
         children: [
           Row(
             children: [
-              CircleAvatar(radius: 32, backgroundImage: NetworkImage(imageUrl)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: imageUrl.startsWith('http')
+                    ? Image.network(imageUrl, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (c, e, s) => Image.asset("assets/images/ava1.jpg", width: 64, height: 64, fit: BoxFit.cover))
+                    : Image.asset("assets/images/ava1.jpg", width: 64, height: 64, fit: BoxFit.cover),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

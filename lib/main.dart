@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'features/auth/views/welcome_screen.dart';
+import 'features/doctor_portal/doctor_screen.dart';
 import 'features/home/views/home_screen.dart';
 import 'features/home/views/search_screen.dart';
 import 'features/appointment/views/schedule_list_screen.dart';
@@ -40,8 +41,63 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Color(0xFF111827)),
         ),
       ),
-      home: const WelcomeScreen(),
+      home: const AuthGate(),
     );
+  }
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _isChecking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkSession();
+  }
+
+  Future<void> _checkSession() async {
+    final session = supabase.auth.currentSession;
+    if (session != null) {
+      try {
+        final data = await supabase
+            .from('users')
+            .select('role')
+            .eq('authid', session.user.id)
+            .single();
+        final role = data['role'] ?? 'patient';
+        if (!mounted) return;
+        if (role == 'doctor') {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const DoctorHomeScreen()),
+            (route) => false,
+          );
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainApp()),
+            (route) => false,
+          );
+        }
+        return;
+      } catch (_) {}
+    }
+    if (mounted) setState(() => _isChecking = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isChecking) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return const WelcomeScreen();
   }
 }
 
@@ -64,25 +120,33 @@ class _MainAppState extends State<MainApp> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 150),
-        switchInCurve: Curves.easeIn,
-        switchOutCurve: Curves.easeOut,
-        transitionBuilder: (child, animation) =>
-            FadeTransition(opacity: animation, child: child),
-        child: KeyedSubtree(
-          key: ValueKey(_currentIndex),
-          child: _buildPage(_currentIndex),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+        }
+      },
+      child: Scaffold(
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          switchInCurve: Curves.easeIn,
+          switchOutCurve: Curves.easeOut,
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: KeyedSubtree(
+            key: ValueKey(_currentIndex),
+            child: _buildPage(_currentIndex),
+          ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBarApp(
-        initialIndex: _currentIndex,
-        onItemTapped: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        bottomNavigationBar: BottomNavigationBarApp(
+          initialIndex: _currentIndex,
+          onItemTapped: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+        ),
       ),
     );
   }
@@ -90,7 +154,10 @@ class _MainAppState extends State<MainApp> {
   Widget _buildPage(int index) {
     switch (index) {
       case 0:
-        return HomeScreen(onSearchTap: () => setState(() => _currentIndex = 1));
+        return HomeScreen(
+          onSearchTap: () => setState(() => _currentIndex = 1),
+          onScheduleTap: () => setState(() => _currentIndex = 2),
+        );
       case 1:
         return const SearchScreen();
       case 2:

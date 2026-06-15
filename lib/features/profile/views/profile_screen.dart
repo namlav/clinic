@@ -5,6 +5,7 @@ import '../models/health_metrics_model.dart';
 import 'medical_records_screen.dart';
 import 'vaccination_history_screen.dart';
 import 'health_insurance_screen.dart';
+import 'profile_edit_screen.dart';
 import '../../appointment/views/appointment_history_screen.dart';
 import '../../notification/views/notification_settings_screen.dart';
 import '../../auth/views/welcome_screen.dart';
@@ -84,7 +85,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 _buildProfileCard(patient),
                 const SizedBox(height: 18),
-                _buildHealthOverviewCard(patient, _buildHealthMetricsFromPatient(patient)),
+                _buildHealthOverviewCard(
+                  patient,
+                  _buildHealthMetricsFromPatient(patient),
+                ),
                 const SizedBox(height: 18),
                 _buildSectionTitle('Quản lý hồ sơ'),
                 const SizedBox(height: 12),
@@ -173,7 +177,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 8),
           Text(
             'Patient ID: #${patient.id}',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Color(0xFF9CA3AF),
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 18),
           Row(
@@ -181,10 +189,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _buildStatusBadge(
                 patient.isActive ? 'ACTIVE' : 'INACTIVE',
-                patient.isActive ? const Color(0xFFEFF6FF) : const Color(0xFFFFEAEA),
-                patient.isActive ? const Color(0xFF2563EB) : const Color(0xFFDC2626),
+                patient.isActive
+                    ? const Color(0xFFEFF6FF)
+                    : const Color(0xFFFFEAEA),
+                patient.isActive
+                    ? const Color(0xFF2563EB)
+                    : const Color(0xFFDC2626),
               ),
             ],
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  FadePageRoute(
+                    builder: (context) => ProfileEditScreen(patient: patient),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.edit, size: 18, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    'Chỉnh Sửa Hồ Sơ',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
@@ -272,9 +320,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  if (metrics?.weightTrend != null && metrics!.weightTrend.isNotEmpty)
+                  if (metrics?.weightTrend != null &&
+                      metrics!.weightTrend.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: metrics.weightTrend.contains('-')
                             ? const Color(0xFFEFF6EE)
@@ -491,10 +543,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return;
     }
-    Navigator.push(
-      context,
-      FadePageRoute(builder: (context) => screen),
-    );
+    Navigator.push(context, FadePageRoute(builder: (context) => screen));
   }
 
   Future<void> _handleLogout() async {
@@ -508,9 +557,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi đăng xuất: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi đăng xuất: $e')));
       }
     }
   }

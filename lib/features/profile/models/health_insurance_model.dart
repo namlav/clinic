@@ -97,7 +97,7 @@ class HealthInsurance {
 
       double totalInvoiceAmount = 0.0;
 
-      if (appointmentsResponse is List && appointmentsResponse.isNotEmpty) {
+      if (appointmentsResponse.isNotEmpty) {
         final appointmentIds = (appointmentsResponse as List)
             .map((apt) => apt['appointmentid'])
             .toList();
@@ -108,13 +108,11 @@ class HealthInsurance {
               .select('totalamount')
               .inFilter('appointmentid', appointmentIds);
 
-          if (paymentsResponse is List) {
-            totalInvoiceAmount = (paymentsResponse as List).fold<double>(
-              0.0,
-              (sum, payment) =>
-                  sum + ((payment['totalamount'] ?? 0) as num).toDouble(),
-            );
-          }
+          totalInvoiceAmount = (paymentsResponse as List).fold<double>(
+            0.0,
+            (sum, payment) =>
+                sum + ((payment['totalamount'] ?? 0) as num).toDouble(),
+          );
         }
       }
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'search_screen.dart';
 import '../../../widgets/fade_page_route.dart';
-import '../../appointment/views/schedule_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onSearchTap;
@@ -15,8 +14,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  DateTime selectedDate = DateTime.now();
-  TimeOfDay selectedTime = TimeOfDay.now();
+  String _userName = '';
 
   late Future<Map<String, dynamic>?> _priorityAppointmentFuture;
   late Future<List<Map<String, dynamic>>> _specialtiesFuture;
@@ -24,8 +22,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserName();
     _priorityAppointmentFuture = _fetchPriorityAppointment();
     _specialtiesFuture = _fetchSpecialties();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await Supabase.instance.client
+          .from('users')
+          .select('fullname')
+          .eq('authid', user.id)
+          .single();
+      if (mounted) setState(() => _userName = data['fullname'] ?? '');
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>?> _fetchPriorityAppointment() async {
@@ -44,17 +56,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final response = await Supabase.instance.client
           .from('appointments')
-          .select(
-            'appointmentid, appointmentdate, starttime, endtime, doctors(fullname, title, avatarurl)',
-          )
+          .select('*, doctors(fullname, title, avatarurl, specialties(specialtyname))')
           .eq('userid', numericUserId)
-          .neq('status', 'Cancelled')
+          .eq('status', 'Confirmed')
           .gte('appointmentdate', today)
           .order('appointmentdate', ascending: true)
           .order('starttime', ascending: true)
           .limit(1)
           .maybeSingle();
-      return response as Map<String, dynamic>?;
+      return response;
     } catch (e) {
       return null;
     }
@@ -69,34 +79,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       return [];
-    }
-  }
-
-  Future<void> pickDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
-  }
-
-  Future<void> pickTime() async {
-    TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: selectedTime,
-    );
-
-    if (picked != null) {
-      setState(() {
-        selectedTime = picked;
-      });
     }
   }
 
@@ -182,9 +164,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
-                "Alexander",
-                style: TextStyle(
+              Text(
+                _userName.isNotEmpty ? _userName : "...",
+                style: const TextStyle(
                   fontSize: 42,
                   fontWeight: FontWeight.w800,
                   height: 1.1,
@@ -210,32 +192,14 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 22),
 
               /// TITLE
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    "Cuộc hẹn ưu tiên",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4, bottom: 1),
-                    child: const Text(
-                      "Xem tất cả",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0057C2),
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ),
-                ],
+              const Text(
+                "Cuộc hẹn ưu tiên",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                  letterSpacing: -0.3,
+                ),
               ),
               const SizedBox(height: 14),
 
@@ -283,8 +247,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       appointment['doctors'] as Map<String, dynamic>?;
                   final String doctorName =
                       doctor?['fullname'] ?? "Bác sĩ chuyên khoa";
+                  final specialty =
+                      doctor?['specialties'] as Map<String, dynamic>? ?? {};
                   final String specialtyName =
-                      doctor?['title'] ?? "Khoa Tổng quát";
+                      specialty['specialtyname'] ?? "Khoa Tổng Quát";
                   final String avatarUrl = doctor?['avatarurl'] ?? "";
 
                   return Container(
@@ -353,7 +319,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     specialtyName,
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Colors.white.withOpacity(0.82),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.82,
+                                      ),
                                       fontWeight: FontWeight.w400,
                                     ),
                                   ),
@@ -368,107 +336,104 @@ class _HomeScreenState extends State<HomeScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            GestureDetector(
-                              onTap: pickDate,
-                              child: Container(
-                                width: 125,
-                                height: 82,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: Colors.white.withOpacity(0.12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.calendar_today_outlined,
-                                          size: 14,
-                                          color: Colors.white.withOpacity(0.85),
+                            Container(
+                              width: 125,
+                              height: 82,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                color: Colors.white.withValues(alpha: 0.12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_outlined,
+                                        size: 14,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.85,
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          "NGÀY",
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            letterSpacing: 1,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(
-                                              0.75,
-                                            ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "NGÀY",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          letterSpacing: 1,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.75,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      appointment['appointmentdate'] ??
-                                          "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
                                       ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    appointment['appointmentdate'] ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                            GestureDetector(
-                              onTap: pickTime,
-                              child: Container(
-                                width: 125,
-                                height: 82,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(18),
-                                  color: Colors.white.withOpacity(0.12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.access_time_outlined,
-                                          size: 14,
-                                          color: Colors.white.withOpacity(0.85),
+                            Container(
+                              width: 125,
+                              height: 82,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                color: Colors.white.withValues(alpha: 0.12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time_outlined,
+                                        size: 14,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.85,
                                         ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          "GIỜ",
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            letterSpacing: 1,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white.withOpacity(
-                                              0.75,
-                                            ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        "GIỜ",
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          letterSpacing: 1,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white.withValues(
+                                            alpha: 0.75,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      appointment['starttime'] != null
-                                          ? "${appointment['starttime'].toString().substring(0, 5)} - ${appointment['endtime'].toString().substring(0, 5)}"
-                                          : selectedTime.format(context),
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
                                       ),
+                                    ],
+                                  ),
+                                  const Spacer(),
+                                  Text(
+                                    appointment['starttime'] != null
+                                        ? "${appointment['starttime'].toString().substring(0, 5)} - ${appointment['endtime'].toString().substring(0, 5)}"
+                                        : '',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -477,19 +442,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         /// BUTTON
                         GestureDetector(
-                          onTap: () {
-                            if (widget.onScheduleTap != null) {
-                              widget.onScheduleTap!();
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ScheduleListScreen(),
-                                ),
-                              );
-                            }
-                          },
+                          onTap: () => widget.onScheduleTap?.call(),
                           child: Container(
                             width: double.infinity,
                             height: 58,
@@ -499,7 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             child: const Center(
                               child: Text(
-                                "Xác nhận tham gia",
+                                "Theo dõi lịch khám",
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -518,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               /// CATEGORY TITLE
               const Text(
-                "Tìm chuyên gia",
+                "Chuyên khoa phổ biến",
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
@@ -561,6 +514,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       return _CategoryItem(
                         spec['specialtyname'] ?? "Chuyên khoa",
                         spec['description'] ?? "Bác sĩ chuyên khoa",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  SpecialtyDoctorsScreen(specialty: spec),
+                            ),
+                          );
+                        },
                       );
                     },
                   );
@@ -590,12 +552,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            "Giữ cơ thể đủ nước trong suốt mùa thu",
+                            "Giữ cơ thể đủ nước trong suốt cả ngày",
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                           SizedBox(height: 6),
                           Text(
-                            "Uông nước giúp duy trì mức năng lượng trong suốt cả ngày.",
+                            "Uống nước giúp duy trì mức năng lượng trong suốt cả ngày.",
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xFF8A94A6),
@@ -666,8 +628,9 @@ class _HomeScreenState extends State<HomeScreen> {
 class _CategoryItem extends StatelessWidget {
   final String title;
   final String sub;
+  final VoidCallback onTap;
 
-  const _CategoryItem(this.title, this.sub);
+  const _CategoryItem(this.title, this.sub, {required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -678,7 +641,7 @@ class _CategoryItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

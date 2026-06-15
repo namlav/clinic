@@ -96,13 +96,11 @@ class Patient {
           .eq('authid', userId)
           .maybeSingle();
 
-      if (response == null) {
-        response = await supabase
+      response ??= await supabase
             .from('users')
             .select('*, healthmetrics(*)')
             .eq('userid', userId)
             .maybeSingle();
-      }
 
       if (response == null) {
         throw Exception('User not found');
@@ -139,7 +137,7 @@ class Patient {
         response['health_weighttrend'] = metrics['weighttrend'];
       }
 
-      return Patient.fromJson(response as Map<String, dynamic>);
+      return Patient.fromJson(response);
     } catch (e) {
       throw Exception('Lỗi lấy thông tin bệnh nhân: $e');
     }

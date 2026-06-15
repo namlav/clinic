@@ -57,6 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 'email': email,
                 'phone': phone,
                 'password': _passwordController.text.trim(),
+                'role': 'patient',
               },
             ),
           ),
@@ -135,7 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 borderRadius: BorderRadius.circular(35),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -152,8 +153,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hint: "Nguyễn Văn Khỏe",
                       icon: Icons.person_outline,
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return "Vui lòng nhập họ tên";
+                        }
                         if (RegExp(
                           r'[0-9!@#<>?":_`~;[\]\\|=+)(*&^%$-]',
                         ).hasMatch(val)) {
@@ -170,8 +172,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hint: "khoe@gmail.com",
                       icon: Icons.email_outlined,
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return "Vui lòng nhập Email";
+                        }
                         if (!RegExp(
                           r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
                         ).hasMatch(val)) {
@@ -188,8 +191,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       hint: "+84 *** *** ***",
                       icon: Icons.phone_outlined,
                       validator: (val) {
-                        if (val == null || val.isEmpty)
+                        if (val == null || val.isEmpty) {
                           return "Vui lòng nhập số điện thoại";
+                        }
                         if (!RegExp(
                           r'^(0|84)[3|5|7|8|9][0-9]{8}$',
                         ).hasMatch(val)) {

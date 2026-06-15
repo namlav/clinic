@@ -60,6 +60,7 @@ class _OTPVerificationScreenState extends State<OTPVerificationScreen> {
             'fullname': widget.userData!['fullname'],
             'email': widget.userData!['email'],
             'phone': widget.userData!['phone'],
+            'role': widget.userData!['role'],
             'isactive': true,
             'joineddate': DateTime.now().toIso8601String(),
             'membershiptier': 'Standard',
