@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'search_screen.dart';
 import '../../../widgets/fade_page_route.dart';
-import '../../appointment/views/schedule_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback? onSearchTap;
@@ -17,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
+  String _userName = '';
 
   late Future<Map<String, dynamic>?> _priorityAppointmentFuture;
   late Future<List<Map<String, dynamic>>> _specialtiesFuture;
@@ -24,8 +24,22 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserName();
     _priorityAppointmentFuture = _fetchPriorityAppointment();
     _specialtiesFuture = _fetchSpecialties();
+  }
+
+  Future<void> _loadUserName() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return;
+    try {
+      final data = await Supabase.instance.client
+          .from('users')
+          .select('fullname')
+          .eq('authid', user.id)
+          .single();
+      if (mounted) setState(() => _userName = data['fullname'] ?? '');
+    } catch (_) {}
   }
 
   Future<Map<String, dynamic>?> _fetchPriorityAppointment() async {
@@ -182,9 +196,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 2),
-              const Text(
-                "Alexander",
-                style: TextStyle(
+              Text(
+                _userName.isNotEmpty ? _userName : "...",
+                style: const TextStyle(
                   fontSize: 42,
                   fontWeight: FontWeight.w800,
                   height: 1.1,
@@ -210,32 +224,14 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 22),
 
               /// TITLE
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    "Cuộc hẹn ưu tiên",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF111827),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4, bottom: 1),
-                    child: const Text(
-                      "Xem tất cả",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF0057C2),
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ),
-                ],
+              const Text(
+                "Cuộc hẹn ưu tiên",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF111827),
+                  letterSpacing: -0.3,
+                ),
               ),
               const SizedBox(height: 14),
 
@@ -483,19 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         /// BUTTON
                         GestureDetector(
-                          onTap: () {
-                            if (widget.onScheduleTap != null) {
-                              widget.onScheduleTap!();
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ScheduleListScreen(),
-                                ),
-                              );
-                            }
-                          },
+                          onTap: () => widget.onScheduleTap?.call(),
                           child: Container(
                             width: double.infinity,
                             height: 58,
@@ -605,12 +589,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           SizedBox(height: 6),
                           Text(
-                            "Giữ cơ thể đủ nước trong suốt mùa thu",
+                            "Giữ cơ thể đủ nước trong suốt cả ngày",
                             style: TextStyle(fontWeight: FontWeight.w600),
                           ),
                           SizedBox(height: 6),
                           Text(
-                            "Uông nước giúp duy trì mức năng lượng trong suốt cả ngày.",
+                            "Uống nước giúp duy trì mức năng lượng trong suốt cả ngày.",
                             style: TextStyle(
                               fontSize: 12,
                               color: Color(0xFF8A94A6),

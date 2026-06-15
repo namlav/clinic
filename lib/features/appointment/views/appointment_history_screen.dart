@@ -518,7 +518,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
           context,
           FadePageRoute(
             builder: (context) =>
-                AppointmentDetailScreen(appointment: appointment),
+                AppointmentDetailScreen(appointmentId: int.parse(appointment.id)),
           ),
         );
       },

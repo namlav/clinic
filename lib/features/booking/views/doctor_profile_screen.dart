@@ -239,7 +239,7 @@ class _DoctorProfilePageState extends State<DoctorProfilePage> {
 
   Widget _buildProfileCard() {
     final String fullname = widget.doctorData['fullname'] ?? "Bác sĩ";
-    final String title = widget.doctorData['title'] ?? "Chuyên gia y tế";
+    final String title = widget.doctorData['specialties']?['specialtyname'] ?? widget.doctorData['title'] ?? "Chuyên gia y tế";
     final String rating = (widget.doctorData['rating'] ?? 5.0).toString();
     final int reviewCount = widget.doctorData['reviewcount'] ?? 0;
     final int experienceYears = widget.doctorData['experienceyears'] ?? 5;

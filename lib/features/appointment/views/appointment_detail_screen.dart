@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../profile/models/medical_appointment_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppointmentDetailScreen extends StatefulWidget {
-  final MedicalAppointment appointment;
+  final int appointmentId;
 
-  const AppointmentDetailScreen({super.key, required this.appointment});
+  const AppointmentDetailScreen({super.key, required this.appointmentId});
 
   @override
   State<AppointmentDetailScreen> createState() =>
@@ -12,16 +12,41 @@ class AppointmentDetailScreen extends StatefulWidget {
 }
 
 class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
-  late MedicalAppointment appointment;
+  Map<String, dynamic>? _appointment;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    appointment = widget.appointment;
+    _fetchAppointment();
   }
 
-  String _formatDate(DateTime date) {
+  Future<void> _fetchAppointment() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('appointments')
+          .select(
+            '*, doctors(doctorid, fullname, title, avatarurl, specialties(specialtyname)), services(servicename, price)',
+          )
+          .eq('appointmentid', widget.appointmentId)
+          .single();
+      if (mounted) setState(() { _appointment = response; _isLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return '';
+    final date = DateTime.tryParse(dateStr);
+    if (date == null) return dateStr;
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String _formatTime(dynamic time) {
+    if (time == null) return '';
+    final s = time.toString().split('.').first;
+    return s.length >= 5 ? s.substring(0, 5) : s;
   }
 
   @override
@@ -42,26 +67,35 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
         ),
         centerTitle: false,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDoctorCard(),
-            const SizedBox(height: 16),
-            _buildAppointmentInfoCard(),
-            const SizedBox(height: 16),
-            _buildServiceCard(),
-            const SizedBox(height: 16),
-            _buildNotesCard(),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _appointment == null
+          ? const Center(child: Text('Không tìm thấy dữ liệu'))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDoctorCard(),
+                  const SizedBox(height: 16),
+                  _buildAppointmentInfoCard(),
+                  const SizedBox(height: 16),
+                  _buildServiceCard(),
+                  const SizedBox(height: 16),
+                  _buildNotesCard(),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
     );
   }
 
   Widget _buildDoctorCard() {
+    final doctor = _appointment!['doctors'] as Map<String, dynamic>?;
+    final doctorName = doctor?['fullname'] ?? 'Bác sĩ';
+    final specialization = doctor?['specialties']?['specialtyname'] ?? 'Khoa';
+    final avatarUrl = doctor?['avatarurl'] ?? '';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -80,17 +114,11 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           CircleAvatar(
             radius: 32,
             backgroundColor: const Color(0xFFEFF6FF),
-            child: Text(
-              appointment.doctorName
-                  .split(' ')
-                  .take(2)
-                  .map((word) => word[0])
-                  .join(),
-              style: const TextStyle(
-                color: Color(0xFF2563EB),
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: avatarUrl.startsWith('http')
+                  ? Image.network(avatarUrl, width: 64, height: 64, fit: BoxFit.cover, errorBuilder: (c, e, s) => _avatarText(doctorName))
+                  : _avatarText(doctorName),
             ),
           ),
           const SizedBox(width: 16),
@@ -99,7 +127,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  appointment.doctorName,
+                  doctorName,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -108,7 +136,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  appointment.specialization,
+                  specialization,
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF6B7280),
@@ -116,7 +144,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  appointment.hospital,
+                  'Phòng Khám',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF9CA3AF),
@@ -130,7 +158,24 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     );
   }
 
+  Widget _avatarText(String name) {
+    final initials = name.split(' ').take(2).map((w) => w.isNotEmpty ? w[0] : '').join();
+    return Center(
+      child: Text(
+        initials,
+        style: const TextStyle(
+          color: Color(0xFF2563EB),
+          fontWeight: FontWeight.w700,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
   Widget _buildAppointmentInfoCard() {
+    final status = _appointment!['status'] as String? ?? '';
+    final timeRange = '${_formatTime(_appointment!['starttime'])} - ${_formatTime(_appointment!['endtime'])}';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -148,7 +193,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Thông Tin Cuộc Khám',
+            'Thông Tin Ca Khám',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -158,35 +203,17 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.calendar_today,
-                  size: 18,
-                  color: Color(0xFF2563EB),
-                ),
-              ),
+              _iconBox(Icons.calendar_today),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Ngày Khám',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                    ),
+                    const Text('Ngày Khám', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                     const SizedBox(height: 4),
                     Text(
-                      _formatDate(appointment.appointmentDate),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111827),
-                      ),
+                      _formatDate(_appointment!['appointmentdate']),
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827)),
                     ),
                   ],
                 ),
@@ -196,35 +223,17 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.access_time,
-                  size: 18,
-                  color: Color(0xFF2563EB),
-                ),
-              ),
+              _iconBox(Icons.access_time),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Giờ Khám',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                    ),
+                    const Text('Giờ Khám', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                     const SizedBox(height: 4),
                     Text(
-                      appointment.appointmentTime ?? 'Không rõ',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF111827),
-                      ),
+                      timeRange,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF111827)),
                     ),
                   ],
                 ),
@@ -234,34 +243,20 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _getStatusBackgroundColor(appointment.status),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _getStatusIcon(appointment.status),
-                  size: 18,
-                  color: _getStatusTextColor(appointment.status),
-                ),
-              ),
+              _iconBoxCustom(Icons.info_outline, _getStatusBackgroundColor(status)),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Trạng Thái',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                    ),
+                    const Text('Trạng Thái', style: TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                     const SizedBox(height: 4),
                     Text(
-                      appointment.status,
+                      status,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: _getStatusTextColor(appointment.status),
+                        color: _getStatusTextColor(status),
                       ),
                     ),
                   ],
@@ -274,11 +269,11 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     );
   }
 
-  /// Shows service provided during the appointment
-  /// Returns empty widget if service data is missing or empty (conditional display pattern)
   Widget _buildServiceCard() {
-    if (appointment.serviceProvided == null ||
-        appointment.serviceProvided!.isEmpty) {
+    final service = _appointment!['services'] as Map<String, dynamic>?;
+    final serviceName = service?['servicename'] as String?;
+
+    if (serviceName == null || serviceName.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -316,22 +311,11 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             ),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.medical_services_outlined,
-                    color: Color(0xFF2563EB),
-                    size: 18,
-                  ),
-                ),
+                _iconBox(Icons.medical_services_outlined),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    appointment.serviceProvided!,
+                    serviceName,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -348,9 +332,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   }
 
   Widget _buildNotesCard() {
-    if (appointment.notes.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    final notes = _appointment!['notes'] as String? ?? '';
+    if (notes.isEmpty) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -385,7 +368,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               border: Border.all(color: const Color(0xFFE5E7EB)),
             ),
             child: Text(
-              appointment.notes,
+              notes,
               style: const TextStyle(
                 fontSize: 14,
                 height: 1.6,
@@ -398,54 +381,43 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     );
   }
 
-  /// Maps appointment status to background color for status badge
-  /// Supports both English and Vietnamese status values with flexible matching
+  Widget _iconBox(IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, size: 18, color: const Color(0xFF2563EB)),
+    );
+  }
+
+  Widget _iconBoxCustom(IconData icon, Color bgColor) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, size: 18, color: _getStatusTextColor(_appointment!['status'] ?? '')),
+    );
+  }
+
   Color _getStatusBackgroundColor(String status) {
     final lowerStatus = status.toLowerCase();
-    if (lowerStatus.contains('cancel')) {
-      return const Color(0xFFFFEAEA);
-    } else if (lowerStatus.contains('pending') || lowerStatus.contains('chờ')) {
-      return const Color(0xFFFFF7ED);
-    } else if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) {
-      return const Color(0xFFEFF6FF);
-    } else if (lowerStatus.contains('complete') ||
-        lowerStatus.contains('hoàn')) {
-      return const Color(0xFFEFF6EE);
-    }
+    if (lowerStatus.contains('cancel')) return const Color(0xFFFFEAEA);
+    if (lowerStatus.contains('pending') || lowerStatus.contains('chờ')) return const Color(0xFFFFF7ED);
+    if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) return const Color(0xFFEFF6FF);
+    if (lowerStatus.contains('complete') || lowerStatus.contains('hoàn')) return const Color(0xFFEFF6EE);
     return const Color(0xFFF3F4F6);
   }
 
-  /// Maps appointment status to text color for status badge
-  /// Ensures readable contrast with corresponding background color
   Color _getStatusTextColor(String status) {
     final lowerStatus = status.toLowerCase();
-    if (lowerStatus.contains('cancel')) {
-      return const Color(0xFFDC2626);
-    } else if (lowerStatus.contains('pending') || lowerStatus.contains('chờ')) {
-      return const Color(0xFFB45309);
-    } else if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) {
-      return const Color(0xFF2563EB);
-    } else if (lowerStatus.contains('complete') ||
-        lowerStatus.contains('hoàn')) {
-      return const Color(0xFF047857);
-    }
+    if (lowerStatus.contains('cancel')) return const Color(0xFFDC2626);
+    if (lowerStatus.contains('pending') || lowerStatus.contains('chờ')) return const Color(0xFFB45309);
+    if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) return const Color(0xFF2563EB);
+    if (lowerStatus.contains('complete') || lowerStatus.contains('hoàn')) return const Color(0xFF047857);
     return const Color(0xFF6B7280);
-  }
-
-  /// Maps appointment status to appropriate icon for visual representation
-  /// Uses consistent icons for each status state across the app
-  IconData _getStatusIcon(String status) {
-    final lowerStatus = status.toLowerCase();
-    if (lowerStatus.contains('cancel')) {
-      return Icons.cancel;
-    } else if (lowerStatus.contains('pending') || lowerStatus.contains('chờ')) {
-      return Icons.schedule;
-    } else if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) {
-      return Icons.check_circle;
-    } else if (lowerStatus.contains('complete') ||
-        lowerStatus.contains('hoàn')) {
-      return Icons.verified;
-    }
-    return Icons.info;
   }
 }

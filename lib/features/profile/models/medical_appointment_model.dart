@@ -12,6 +12,8 @@ class MedicalAppointment {
   final bool isUpcoming;
   final String? serviceProvided;
   final String? appointmentTime;
+  final String? startTime;
+  final String? endTime;
 
   MedicalAppointment({
     required this.id,
@@ -25,6 +27,8 @@ class MedicalAppointment {
     required this.isUpcoming,
     this.serviceProvided,
     this.appointmentTime,
+    this.startTime,
+    this.endTime,
   });
 
   factory MedicalAppointment.fromJson(Map<String, dynamic> json) {
@@ -32,6 +36,8 @@ class MedicalAppointment {
         ? DateTime.parse(json['appointmentdate'])
         : DateTime.now();
     final isUpcoming = appointmentDate.isAfter(DateTime.now());
+    final rawStart = json['starttime']?.toString() ?? '';
+    final rawEnd = json['endtime']?.toString() ?? '';
 
     return MedicalAppointment(
       id: json['appointmentid']?.toString() ?? '',
@@ -46,6 +52,8 @@ class MedicalAppointment {
       isUpcoming: isUpcoming,
       serviceProvided: json['serviceprovided'] ?? json['service_provided'],
       appointmentTime: json['appointmenttime'] ?? json['appointment_time'],
+      startTime: rawStart.length >= 5 ? rawStart.substring(0, 5) : null,
+      endTime: rawEnd.length >= 5 ? rawEnd.substring(0, 5) : null,
     );
   }
 
