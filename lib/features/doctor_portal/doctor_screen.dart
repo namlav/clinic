@@ -12,6 +12,7 @@ class DoctorHomeScreen extends StatefulWidget {
 class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   final supabase = Supabase.instance.client;
 
+  // Bảng màu đồng bộ toàn app
   static const Color kPrimaryDark = Color(0xFF00468C);
   static const Color kPrimary = Color(0xFF0056D2);
   static const Color kBackground = Color(0xFFF8FAFC);
@@ -23,7 +24,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   Map<String, dynamic>? _doctorInfo;
   List<Map<String, dynamic>> _todayAppointments = [];
 
-  // Lịch tuần
+  // Lịch tuần: map 'yyyy-MM-dd' -> danh sách ca trong ngày đó
   Map<String, List<Map<String, dynamic>>> _weekAppointments = {};
   DateTime _currentWeekStart = _mondayOf(DateTime.now());
   bool _isWeekLoading = false;
@@ -33,7 +34,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   int _pendingCount = 0;
   int _completedCount = 0;
 
-  // Lịch làm việc 
+  // Lịch làm việc (doctor_availabilities)
   List<Map<String, dynamic>> _availabilities = [];
   bool _isWorkdayLoading = false;
 
@@ -58,17 +59,24 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
         return;
       }
 
-      // 1. Lấy thông tin bác sĩ
+      // 1a. Lấy userid từ bảng users theo authid (auth.uid của Supabase)
+      final userRow = await supabase
+          .from('users')
+          .select('userid')
+          .eq('authid', user.id)
+          .single();
+
+      // 1b. Lấy thông tin bác sĩ theo userid (bảng doctors không có authid)
       final doctorInfo = await supabase
           .from('doctors')
           .select('*, specialties(specialtyname)')
-          .eq('authid', user.id)
+          .eq('userid', userRow['userid'])
           .single();
       _doctorInfo = doctorInfo;
       _doctorId = doctorInfo['doctorid'] as int?;
       _doctorName = doctorInfo['fullname'] ?? '';
 
-      // 2. Lấy lịch khám TRONG NGÀY HÔM NAY 
+      // 2. Lấy lịch khám TRONG NGÀY HÔM NAY của bác sĩ
       final today = DateTime.now().toIso8601String().split('T')[0];
       final data = await supabase
           .from('appointments')
@@ -141,7 +149,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     });
     _loadWeekData();
   }
-//lịch làm việc
+
+  // ===================== LỊCH LÀM VIỆC (doctor_availabilities) =====================
   Future<void> _loadAvailabilities() async {
     if (_doctorId == null) return;
     setState(() => _isWorkdayLoading = true);
@@ -209,6 +218,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       debugPrint("Lỗi xóa ngày làm: $e");
     }
   }
+
+  // Mở dialog chọn ngày + giờ để đăng ký ca làm
   Future<void> _showAddAvailabilityDialog() async {
     final pickedDate = await showDatePicker(
       context: context,
@@ -248,14 +259,21 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     await _addAvailability(pickedDate, pickedStart, pickedEnd);
   }
 
-  // lấy tên bệnh nhân 
+  // Helper: lấy tên bệnh nhân an toàn (tránh crash khi null)
+  void _showSnackBar(String msg, Color bg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: bg),
+    );
+  }
+
   String _patientName(Map<String, dynamic> app) {
     final users = app['users'];
     if (users is Map) return (users['fullname'] ?? 'Bệnh nhân').toString();
     return 'Bệnh nhân';
   }
 
-  // lấy giờ 
+  // Helper: lấy giờ bắt đầu dạng HH:mm an toàn
   String _startTime(Map<String, dynamic> app) {
     final raw = (app['starttime'] ?? '').toString();
     if (raw.length >= 5) return raw.substring(0, 5);
@@ -295,6 +313,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  // ===================== TAB 0: DASHBOARD HÔM NAY =====================
   Widget _buildDashboardTab() {
     return RefreshIndicator(
       onRefresh: _loadDashboardData,
@@ -330,6 +349,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  // ===================== TAB 1: LỊCH TUẦN (thời khóa biểu T2-CN) =====================
   Widget _buildWeeklyScheduleTab() {
     const weekDayNames = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     final today = DateTime.now();
@@ -424,7 +444,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     return "${fmt(_currentWeekStart)} - ${fmt(end)}/${end.year}";
   }
 
-  // 1 dòng = 1 ngày trong tuần
+  // 1 dòng = 1 ngày trong tuần (kiểu thời khóa biểu)
   Widget _buildDayRow(
     String dayName,
     DateTime day,
@@ -549,7 +569,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       ),
     );
   }
-// ngày làm
+
+  // ===================== TAB 2: NGÀY LÀM (chờ schema từ nhóm trưởng) =====================
   Widget _buildWorkdayTab() {
     return SafeArea(
       child: Column(
@@ -663,7 +684,6 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -675,15 +695,22 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            decoration: BoxDecoration(
-              color: kPrimary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
-            ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => _showAvailabilityOptions(item),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: kPrimary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
             child: Column(
               children: [
                 Text(
@@ -740,9 +767,108 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
             icon: const Icon(Icons.delete_outline, color: Colors.red),
             onPressed: () => _confirmDeleteAvailability(item),
           ),
-        ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
+  }
+
+  // Menu khi bấm vào thẻ ngày làm: Sửa giờ / Xóa
+  void _showAvailabilityOptions(Map<String, dynamic> item) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.fromLTRB(25, 20, 25, 30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined, color: kPrimary),
+              title: const Text("Sửa khung giờ"),
+              onTap: () {
+                Navigator.pop(context);
+                _editAvailabilityTime(item);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Colors.red),
+              title: const Text("Xóa ngày làm"),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDeleteAvailability(item);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Sửa giờ bắt đầu / kết thúc của 1 ngày làm
+  Future<void> _editAvailabilityTime(Map<String, dynamic> item) async {
+    TimeOfDay parseTime(String raw, int fallbackHour) {
+      try {
+        final parts = raw.split(':');
+        return TimeOfDay(
+            hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      } catch (_) {
+        return TimeOfDay(hour: fallbackHour, minute: 0);
+      }
+    }
+
+    final curStart = parseTime((item['starttime'] ?? '08:00').toString(), 8);
+    final curEnd = parseTime((item['endtime'] ?? '17:00').toString(), 17);
+
+    final pickedStart = await showTimePicker(
+      context: context,
+      initialTime: curStart,
+      helpText: "Sửa giờ bắt đầu",
+    );
+    if (pickedStart == null || !mounted) return;
+
+    final pickedEnd = await showTimePicker(
+      context: context,
+      initialTime: curEnd,
+      helpText: "Sửa giờ kết thúc",
+    );
+    if (pickedEnd == null || !mounted) return;
+
+    if ((pickedEnd.hour * 60 + pickedEnd.minute) <=
+        (pickedStart.hour * 60 + pickedStart.minute)) {
+      _showSnackBar("Giờ kết thúc phải sau giờ bắt đầu.", Colors.red);
+      return;
+    }
+
+    String fmt(TimeOfDay t) =>
+        "${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00";
+
+    try {
+      await supabase.from('doctor_availabilities').update({
+        'starttime': fmt(pickedStart),
+        'endtime': fmt(pickedEnd),
+      }).eq('availabilityid', item['availabilityid']);
+      if (!mounted) return;
+      _showSnackBar("Đã cập nhật khung giờ.", const Color(0xFF22C55E));
+      _loadAvailabilities();
+    } catch (e) {
+      debugPrint("Lỗi sửa giờ: $e");
+      if (!mounted) return;
+      _showSnackBar("Lỗi sửa giờ: $e", Colors.red);
+    }
   }
 
   void _confirmDeleteAvailability(Map<String, dynamic> item) {
@@ -775,7 +901,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     if (raw.length >= 5) return raw.substring(0, 5);
     return raw.isEmpty ? '--:--' : raw;
   }
-//cá nhân
+
+  // ===================== TAB 3: CÁ NHÂN =====================
   Widget _buildProfileTab() {
     final specialty =
         _doctorInfo?['specialties']?['specialtyname']?.toString() ??
@@ -789,7 +916,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     final education = _doctorInfo?['education']?.toString().trim() ?? '';
     final bio = _doctorInfo?['bio']?.toString().trim() ?? '';
 
-    // Tên hiển thị
+    // Tên hiển thị: ghép title (nếu có) + tên, mặc định "BS."
     final displayName =
         title.isNotEmpty ? "$title $_doctorName" : "BS. $_doctorName";
 
@@ -949,6 +1076,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  // Ô chỉ số nhỏ trên header tab Cá nhân
   Widget _headerStat(IconData icon, String value, String label) {
     return Column(
       children: [
@@ -1022,6 +1150,8 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
       debugPrint("Lỗi đăng xuất: $e");
     }
   }
+
+  // ===================== BOTTOM NAV (style đồng bộ app) =====================
   Widget _buildDoctorBottomNav() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1091,6 +1221,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  // ===================== HERO HEADER (gradient sang trọng) =====================
   Widget _buildHeroHeader() {
     final now = DateTime.now();
     String greeting = "Chào buổi sáng";
@@ -1179,6 +1310,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  // ===================== STAT GRID =====================
   Widget _buildStatGrid() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
@@ -1258,6 +1390,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  // ===================== NEXT PATIENT SPOTLIGHT =====================
   Widget _buildNextPatientSpotlight() {
     final nextApp = _todayAppointments.firstWhere(
       (a) => a['status'] == 'Confirmed',
@@ -1364,6 +1497,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     );
   }
 
+  // ===================== TIMELINE DANH SÁCH CA =====================
   Widget _buildTimeline() {
     if (_todayAppointments.isEmpty) {
       return Container(
@@ -1399,7 +1533,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Cột timeline 
+              // Cột timeline (giờ + đường nối)
               Column(
                 children: [
                   Text(
@@ -1533,6 +1667,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
     }
   }
 
+  // ===================== ACTIONS =====================
   void _navigateToForm(Map<String, dynamic> app) {
     Navigator.push(
       context,
