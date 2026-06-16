@@ -42,14 +42,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       String email = _emailController.text.trim().toLowerCase();
 
       try {
-        // Kiểm tra xem email đã tồn tại trong public.users chưa
-        final existingUser = await supabase
-            .from('users')
-            .select('email')
-            .eq('email', email)
-            .maybeSingle();
+        // Sử dụng hàm RPC check_email_exists để kiểm tra mà không bị chặn bởi RLS
+        final bool isEmailExists = await supabase
+            .rpc('check_email_exists', params: {'lookup_email': email});
 
-        if (existingUser != null) {
+        if (isEmailExists) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Email này đã được đăng ký, vui lòng đăng nhập!"),
