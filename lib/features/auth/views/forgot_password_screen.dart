@@ -27,13 +27,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       final String email = _emailController.text.trim().toLowerCase();
 
       try {
-        final userCheck = await supabase
-            .from('users')
-            .select()
-            .eq('email', email)
-            .maybeSingle();
+        // Sử dụng hàm RPC check_email_exists để kiểm tra mà không bị chặn bởi RLS
+        final bool isEmailExists = await supabase
+            .rpc('check_email_exists', params: {'lookup_email': email});
 
-        if (userCheck == null) {
+        if (!isEmailExists) {
           throw 'Email này chưa được đăng ký trong hệ thống.';
         }
 
