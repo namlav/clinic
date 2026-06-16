@@ -1,6 +1,10 @@
+<div align = "center">
+  
 # SereneHealth 🏥
-
 [![Nam Lav](https://img.shields.io/badge/Author-Nam_Lav-0D9488?style=for-the-badge&logo=github&logoColor=white)](https://github.com/namlav)
+
+</div>
+
 
 ## 🎯 Mục tiêu
 
@@ -92,4 +96,8 @@ Dự án ứng dụng mạnh mẽ tính năng Row Level Security (RLS) của Sup
 - Bác sĩ chỉ được phép truy xuất danh sách bệnh nhân và lịch hẹn đã được đặt riêng cho mình.
 - Tự động điều hướng giao diện linh hoạt dựa trên Role của tài khoản (Doctor / Patient).
 
+<div align="center">
+  
 ## 🚀 Happy Coding!
+
+</div>
