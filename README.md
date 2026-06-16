@@ -96,6 +96,12 @@ Dự án ứng dụng mạnh mẽ tính năng Row Level Security (RLS) của Sup
 - Bác sĩ chỉ được phép truy xuất danh sách bệnh nhân và lịch hẹn đã được đặt riêng cho mình.
 - Tự động điều hướng giao diện linh hoạt dựa trên Role của tài khoản (Doctor / Patient).
 
+## Thanks to Contributors
+### [TranDucHuy047](https://github.com/TranDucHuy047)
+### [Duyen191](https://github.com/Duyen191)
+### [hyn1306](https://github.com/hyn1306)
+### [Shindev](https://github.com/shind26)
+
 <div align="center">
   
 ## 🚀 Happy Coding!
