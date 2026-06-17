@@ -21,6 +21,8 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
   final _notesController = TextEditingController();
   bool _isSaving = false;
 
+  bool get _isCompleted => widget.appointmentData['status'] == 'Completed';
+
   @override
   void dispose() {
     _diagnosisController.dispose();
@@ -126,6 +128,7 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
                         controller: _diagnosisController,
                         maxLines: 3,
                         hint: "Nhập kết quả chẩn đoán...",
+                        enabled: !_isCompleted,
                         validator: (val) => (val == null || val.trim().isEmpty)
                             ? "Không được để trống"
                             : null,
@@ -138,6 +141,7 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
                         controller: _prescriptionController,
                         maxLines: 5,
                         hint: "Nhập đơn thuốc và các xét nghiệm phát sinh...",
+                        enabled: !_isCompleted,
                         validator: (val) => (val == null || val.trim().isEmpty)
                             ? "Không được để trống"
                             : null,
@@ -149,6 +153,7 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
                       _buildTextField(
                         controller: _notesController,
                         maxLines: 2,
+                        enabled: !_isCompleted,
                         hint: "Lời dặn dành cho bệnh nhân...",
                       ),
                       const SizedBox(height: 32),
@@ -268,13 +273,13 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: kPrimary.withValues(alpha: 0.1),
+              color: _isCompleted ? Colors.green.withValues(alpha: 0.1) : kPrimary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Text(
-              "Đang khám",
+            child: Text(
+              _isCompleted ? "Đã hoàn thành" : "Đang khám",
               style: TextStyle(
-                color: kPrimary,
+                color: _isCompleted ? Colors.green : kPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -306,11 +311,13 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
     required TextEditingController controller,
     required int maxLines,
     required String hint,
+    bool enabled = true,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
+      enabled: enabled,
       validator: validator,
       decoration: InputDecoration(
         hintText: hint,
@@ -341,6 +348,10 @@ class _MedicalExamFormState extends State<MedicalExamForm> {
 
   // nút lưu
   Widget _buildSubmitButton() {
+    if (_isCompleted) {
+      return const SizedBox.shrink();
+    }
+    
     return SizedBox(
       width: double.infinity,
       height: 55,

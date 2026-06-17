@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../appointment/views/appointment_detail_screen.dart';
 
 class AppointmentHistoryScreen extends StatefulWidget {
   final int doctorId;
@@ -53,8 +54,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       final toStr = _dateKey(_toDate);
       // Chặn trên nới thêm 1 ngày để không loại nhầm bản ghi ngày cuối
       // khi cột appointmentdate là kiểu timestamp/timestamptz.
-      final endExclusive =
-          _dateKey(_toDate.add(const Duration(days: 1)));
+      final endExclusive = _dateKey(_toDate.add(const Duration(days: 1)));
 
       final data = await supabase
           .from('appointments')
@@ -72,8 +72,10 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
         return key.compareTo(fromStr) >= 0 && key.compareTo(toStr) <= 0;
       }).toList();
 
-      debugPrint("Lịch sử khám: doctorId=${widget.doctorId} "
-          "$fromStr..$toStr | raw=${raw.length} | filtered=${filtered.length}");
+      debugPrint(
+        "Lịch sử khám: doctorId=${widget.doctorId} "
+        "$fromStr..$toStr | raw=${raw.length} | filtered=${filtered.length}",
+      );
 
       setState(() {
         _results = filtered;
@@ -167,17 +169,17 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _results.isEmpty
-                      ? _buildEmpty()
-                      : RefreshIndicator(
-                          onRefresh: _loadHistory,
-                          color: kPrimary,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: _results.length,
-                            itemBuilder: (context, i) =>
-                                _buildHistoryCard(_results[i]),
-                          ),
-                        ),
+                  ? _buildEmpty()
+                  : RefreshIndicator(
+                      onRefresh: _loadHistory,
+                      color: kPrimary,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _results.length,
+                        itemBuilder: (context, i) =>
+                            _buildHistoryCard(_results[i]),
+                      ),
+                    ),
             ),
           ],
         ),
@@ -226,9 +228,13 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
       child: Row(
         children: [
-          Expanded(child: _dateButton("Từ ngày", _fromDate, () => _pickDate(true))),
+          Expanded(
+            child: _dateButton("Từ ngày", _fromDate, () => _pickDate(true)),
+          ),
           const SizedBox(width: 10),
-          Expanded(child: _dateButton("Đến ngày", _toDate, () => _pickDate(false))),
+          Expanded(
+            child: _dateButton("Đến ngày", _toDate, () => _pickDate(false)),
+          ),
         ],
       ),
     );
@@ -248,8 +254,10 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label,
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+            Text(
+              label,
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+            ),
             const SizedBox(height: 2),
             Row(
               children: [
@@ -311,79 +319,100 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
     final status = item['status']?.toString() ?? '';
     final color = _statusColor(status);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: color.withValues(alpha: 0.12),
-            child: Icon(Icons.person, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _patientName(item),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
+    return GestureDetector(
+      onTap: () {
+        final appointmentId = item['appointmentid'];
+        if (appointmentId != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  AppointmentDetailScreen(appointmentId: appointmentId),
+            ),
+          );
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: color.withValues(alpha: 0.12),
+              child: Icon(Icons.person, color: color, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _patientName(item),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.event, size: 13, color: Colors.grey.shade500),
-                    const SizedBox(width: 4),
-                    Text(
-                      _dateLabel(item),
-                      style: TextStyle(
-                          color: Colors.grey.shade600, fontSize: 13),
-                    ),
-                    const SizedBox(width: 10),
-                    Icon(Icons.access_time,
-                        size: 13, color: Colors.grey.shade500),
-                    const SizedBox(width: 4),
-                    Text(
-                      _time(item['starttime']),
-                      style: TextStyle(
-                          color: Colors.grey.shade600, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _statusLabel(status),
-              style: TextStyle(
-                color: color,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.event, size: 13, color: Colors.grey.shade500),
+                      const SizedBox(width: 4),
+                      Text(
+                        _dateLabel(item),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Icon(
+                        Icons.access_time,
+                        size: 13,
+                        color: Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _time(item['starttime']),
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _statusLabel(status),
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
