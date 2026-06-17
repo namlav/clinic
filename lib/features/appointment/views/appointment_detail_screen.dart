@@ -26,7 +26,7 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
       final response = await Supabase.instance.client
           .from('appointments')
           .select(
-            '*, doctors(doctorid, fullname, title, avatarurl, specialties(specialtyname)), services(servicename, price)',
+            '*, doctors(doctorid, fullname, title, avatarurl, specialties(specialtyname)), services(servicename, price), medicalrecords(diagnosis, prescription)',
           )
           .eq('appointmentid', widget.appointmentId)
           .single();
@@ -81,6 +81,10 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                   _buildAppointmentInfoCard(),
                   const SizedBox(height: 16),
                   _buildServiceCard(),
+                  const SizedBox(height: 16),
+                  _buildDiagnosisCard(),
+                  const SizedBox(height: 16),
+                  _buildPrescriptionCard(),
                   const SizedBox(height: 16),
                   _buildNotesCard(),
                   const SizedBox(height: 24),
@@ -419,5 +423,129 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
     if (lowerStatus.contains('confirm') || lowerStatus.contains('xác')) return const Color(0xFF2563EB);
     if (lowerStatus.contains('complete') || lowerStatus.contains('hoàn')) return const Color(0xFF047857);
     return const Color(0xFF6B7280);
+  }
+
+  Widget _buildDiagnosisCard() {
+    final records = _appointment!['medicalrecords'];
+    Map<String, dynamic>? record;
+    if (records is List && records.isNotEmpty) {
+      record = records.first;
+    } else if (records is Map) {
+      record = records as Map<String, dynamic>;
+    }
+    
+    final diagnosis = record?['diagnosis'] as String?;
+
+    if (diagnosis == null || diagnosis.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(20),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Chẩn Đoán Bệnh Lý',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Text(
+              diagnosis,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.6,
+                color: Color(0xFF111827),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrescriptionCard() {
+    final records = _appointment!['medicalrecords'];
+    Map<String, dynamic>? record;
+    if (records is List && records.isNotEmpty) {
+      record = records.first;
+    } else if (records is Map) {
+      record = records as Map<String, dynamic>;
+    }
+    
+    final prescription = record?['prescription'] as String?;
+
+    if (prescription == null || prescription.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withAlpha(20),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Đơn Thuốc & Dịch Vụ',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(14),
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF9FAFB),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: Text(
+              prescription,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.6,
+                color: Color(0xFF111827),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
